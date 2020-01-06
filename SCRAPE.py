@@ -19,8 +19,27 @@ def getTable(url):
         print("Server could not be found")
     else:#If there are no errors
         #Scrapes
-        #                  <div class="box-headline flexbox nowrap header">
         html = BS(webpage.read(), "html.parser")
+
+        #Before anything, it needs to check if the result is valid, "1" under the teams logo means match page is invalid.
+
+        #i am looking for <div class="won">1</div>
+        try:#I need to use try at the moment, just because there might be a rare case of tie, and the class won wont be there or correct
+            valid = html.find("div", {"class":"won"}).getText()
+            if valid == "1":
+                valid1 = False
+            else:
+                valid1 = True
+        except:
+            valid1 = True
+        if valid1 == False:
+            print("aaaaaaaaaaaaaa i havent programmed this in properly yet, but this means the match page isnt valid, but the program will try its hardest to work :((((")
+
+
+
+
+        
+        #                  <div class="box-headline flexbox nowrap header">
         #Find out if it is LAN and if it is best of 3
         #<div class="padding preformatted-text">Best of 3 (LAN)
         #Someones name could have a 3 or a 1 in it so i need to make sure when it says someone is standing in for someone
@@ -108,13 +127,13 @@ while True:
 ##            html.find('div', {"class":"results-sublist"}).decompose()#no errors means there is a featured results, so this line removes the features results.
         #above doesnt work anymore, tbh fair enough it was crap code
         latestResult = html.find("div", {"class":"result-con"}).find("a", href=True)#Finds the latest result
-        aaa = "".join([URL, latestResult["href"]])#Finds the HREF link, adds it to URL
-        if aaa != lastResult:
-            lastResult = aaa
-            print(aaa)
+        latestResultURL = "".join([URL, latestResult["href"]])#Finds the HREF link, adds it to URL
+        if latestResultURL != lastResult:
+            lastResult = latestResultURL
+            print(latestResultURL)
             print("Received URL from HTML, scraping URL in 5 seconds...")
             sleep(5)
-            data = getTable(aaa)
+            data = getTable(latestResultURL)
             table1 =data[0]
             table2 = data[1]
             lookAtTable(table1)
