@@ -2,21 +2,7 @@ from time import sleep as sleep
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from bs4 import BeautifulSoup as BS
-from tkinter import *
 
-
-##class application(Frame):
-##    def __init__(self, root):
-##        
-##
-##
-##
-##
-##
-##
-##
-##
-##instance = application(Tk())
 
 URL = "https://www.hltv.org"
 req = Request("https://www.hltv.org/results", headers={'User-Agent':'Mozilla/6.0'})
