@@ -55,11 +55,12 @@ def getTable(url):
         #not the closing map.
         
         #<div class="box-headline flexbox nowrap header">
-        maps = html.find("div",{"class":"box-headline flexbox nowrap header"})
-        maplist = maps.find("div",{"class":"flexbox nowrap"})#There would normally be loads of these div with class small-padding
+        maplist = html.find("div",{"class":"box-headline flexbox nowrap header"})
+        maplist = maplist.find("div",{"class":"flexbox nowrap"})#There would normally be loads of these div with class small-padding
         maplist = maplist.findAll("div",{"class":"small-padding"})
         #but i search only html for div class box-headline flexbox nowrap header, which is specific to one bit.
-        print(len(maplist))
+        numberOfMaps = (len(maplist)-1)
+        print("there is {0} number of map(s)".format(numberOfMaps))
         
         #<div class="small-padding"> (should be the amount of maps +1 of these, if its any less then then its missing a whole maps stats.)
 
@@ -89,36 +90,76 @@ def getTable(url):
             else:#If there are no errors
                 #Scrapes
                 html = BS(webpage.read(), "html.parser")
-                latestResult = html.findAll("table", {"class":"stats-table"})
+                if numberOfMaps == 1:
+                    latestResult = html.findAll("table", {"class":"stats-table"})
+                else:
+                    mapListHTML = []
+                    mapListURL = []
+                    mapListHTML = html.findAll("a", {"class":"col stats-match-map standard-box a-reset inactive"})
+                    for i in range(len(mapListHTML)):
+                        mapListURL.append(mapListHTML[i].get("href"))
+                    latestResult = sUbBrROuTiNE(mapListURL)
+
+
         return(latestResult)
 
+def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is not a best of 3.
+    mapsTables = []
+    for i in range(len(mapListURL)):
+        url = "".join([URL, mapListURL[i]])
+        print(url)
+        print("waiting 5 seconds")
+        sleep(5)
+        req = Request(url, headers={'User-Agent':'Mozilla/6.0'})
+        try:
+            webpage = urlopen(req)#Open hltv results page
+        except HTTPError as e:#If there is a server error
+            print("e")#show the error
+        except URLError as e:#If URL does not exist
+            print("Server could not be found")
+        else:#If there are no errors
+            #Scrapes
+            html = BS(webpage.read(), "html.parser")
+            for each in html.findAll("table", {"class":"stats-table"}):
+                mapsTables.append(each)
+    return(mapsTables)
+
 def lookAtTable(data):
-    teamName = data.find("th", {"class":"st-teamname text-ellipsis"}).getText()
-    print(teamName)
-    name = data.findAll("td", {"class":"st-player"})#Finds the HTML tag containing each players name
-    #data.findAll("span", {"class":"gtSmartphone-only"}).decompose
-    #i need too find a way to remove this. This command doesn work.
-    kills = data.findAll("td",{"class":"st-kills"} )
-    deaths = data.findAll("td", {"class": "st-deaths"})
-    kast = data.findAll("td", {"class":"st-kdratio"})
-    adr=data.findAll("td", {"class":"st-adr"})
-    #fkDiff=data.findAll("td", {"class":"st-fkdiff won", "class":"st-fkdiff lost"})
-    #it either gets won or lost, i need both
-    rating=data.findAll("td", {"class":"st-rating"})
-    for i in range (len(name)):#Goes through every person in game
-        #above is the len because if it is a best of 3 and if a standin comes for the
-        #third map, it is going to have 6 players instead of 5
-        print(name[i].getText())#Prints only the text f the player name
-        print(kills[i].getText())
-        print(deaths[i].getText())
-        print(kast[i].getText())
-        print(adr[i].getText())
-        #print(fkDiff[i].getText())
-        #doesnt work see above
-        print(rating[i].getText())
-        print("NEXT")
-        print("")
-        print("PLAYER:")
+    numberOfMaps = (len(data)//2)#Theres two sets of tables for each map.
+    
+    for i in range(len(data)):
+        print("""
+
+Map Number {0}
+
+""".format(i/2))
+        currentTable = data[i]
+        teamName = currentTable.find("th", {"class":"st-teamname text-ellipsis"}).getText()
+        print(teamName)
+        name = currentTable.findAll("td", {"class":"st-player"})#Finds the HTML tag containing each players name
+        #data.findAll("span", {"class":"gtSmartphone-only"}).decompose
+        #i need too find a way to remove this. This command doesn work.
+        kills = currentTable.findAll("td",{"class":"st-kills"} )
+        deaths = currentTable.findAll("td", {"class": "st-deaths"})
+        kast = currentTable.findAll("td", {"class":"st-kdratio"})
+        adr=currentTable.findAll("td", {"class":"st-adr"})
+        #fkDiff=data.findAll("td", {"class":"st-fkdiff won", "class":"st-fkdiff lost"})
+        #it either gets won or lost, i need both
+        rating=currentTable.findAll("td", {"class":"st-rating"})
+        for i in range (len(name)):#Goes through every person in game
+            #above is the len because if it is a best of 3 and if a standin comes for the
+            #third map, it is going to have 6 players instead of 5
+            print(name[i].getText())#Prints only the text f the player name
+            print(kills[i].getText())
+            print(deaths[i].getText())
+            print(kast[i].getText())
+            print(adr[i].getText())
+            #print(fkDiff[i].getText())
+            #doesnt work see above
+            print(rating[i].getText())
+            print("NEXT")
+            print("")
+            print("PLAYER:")
 def ohnoes():
     print("oh no there is no table")
     #One issue could be that there is a table, but it doesnt have all the maps!
@@ -151,10 +192,7 @@ while True:
             print("Received URL from HTML, scraping URL in 5 seconds...")
             sleep(5)
             data = getTable(latestResultURL)
-            table1 =data[0]
-            table2 = data[1]
-            lookAtTable(table1)
-            lookAtTable(table2)
+            lookAtTable(data)
         else:
             print("That was the old url, no need to scrape again!!!")
         print("Done, waiting 90 seconds before scraping again...")
