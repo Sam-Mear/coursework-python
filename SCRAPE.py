@@ -47,6 +47,23 @@ def getTable(url):
         #
         #
         #but also if the name also has LAN in it.
+
+
+        #The program still needs to do checks to make sure the matchpage is okay for webscraping
+        #The next check is to make sure all the stats tables are there, if the web scraper is too
+        #quick on the match page, hltv might have only had enough time for the first few maps, and
+        #not the closing map.
+        
+        #<div class="box-headline flexbox nowrap header">
+        maps = html.find("div",{"class":"box-headline flexbox nowrap header"})
+        maplist = maps.find("div",{"class":"flexbox nowrap"})#There would normally be loads of these div with class small-padding
+        maplist = maplist.findAll("div",{"class":"small-padding"})
+        #but i search only html for div class box-headline flexbox nowrap header, which is specific to one bit.
+        print(len(maplist))
+        
+        #<div class="small-padding"> (should be the amount of maps +1 of these, if its any less then then its missing a whole maps stats.)
+
+        
         text = html.find("div", {"class":"padding preformatted-text"}).getText()
         print(text)
         text = html.find("div", {"class":"event text-ellipsis"}).getText()
