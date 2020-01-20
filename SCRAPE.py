@@ -9,7 +9,6 @@ req = Request("https://www.hltv.org/results", headers={'User-Agent':'Mozilla/6.0
 
 
 def getTable(url):
-    #REMEMBER FORFEITS ARE A THING
     req = Request(url, headers={'User-Agent':'Mozilla/6.0'})
     try:
         webpage = urlopen(req)
@@ -23,16 +22,16 @@ def getTable(url):
 
         #Before anything, it needs to check if the result is valid, "1" under the teams logo means match page is invalid.
 
-        #i am looking for <div class="won">1</div>
+        #i am looking for <div class="won">1</div>, if it exists then i know this result isnt valid to be scraped, check design segment.
         try:#I need to use try at the moment, just because there might be a rare case of tie, and the class won wont be there or correct
-            valid = html.find("div", {"class":"won"}).getText()
-            if valid == "1":
-                valid1 = False
+            classWon = html.find("div", {"class":"won"}).getText()
+            if classWon == "1":
+                valid = False
             else:
-                valid1 = True
+                valid = True
         except:
-            valid1 = True
-        if valid1 == False:
+            valid = True
+        if valid == False:
             print("aaaaaaaaaaaaaa i havent programmed this in properly yet, but this means the match page isnt valid, but the program will try its hardest to work :((((")
 
 
@@ -61,8 +60,19 @@ def getTable(url):
         #but i search only html for div class box-headline flexbox nowrap header, which is specific to one bit.
         numberOfMaps = (len(maplist)-1)
         print("there is {0} number of map(s)".format(numberOfMaps))
-        
-        #<div class="small-padding"> (should be the amount of maps +1 of these, if its any less then then its missing a whole maps stats.)
+        #Now to check how many maps there is supposed to be
+        #I already have classWon from a different thing, so i only need to scrape classLost
+        classLost = html.find("div", {"class":"lost"}).getText()
+        mapsCheck = int(classLost)+int(classWon)
+        #Checking if theyre the same
+        if mapsCheck >5:
+            print("dont worry about maps check, its only a best of 1")
+            #remember to explain in design the reason why this check doesnt work for best of 1 and what i have put into place to check best of ones.
+        elif mapsCheck == numberOfMaps:
+            print("All stats are there")
+        else:
+            print("RESULT MISSING DATA!")
+            return("MissingMap(s)")
 
         
         text = html.find("div", {"class":"padding preformatted-text"}).getText()
@@ -164,6 +174,20 @@ def ohnoes():
     print("oh no there is no table")
     #One issue could be that there is a table, but it doesnt have all the maps!
 
+def checkingForMap(URL):
+    print("Only goes here if there is a stats table missing")
+    print("Ill give it 3 tries. if it fails on all, it will give up and move on")
+    count = 0
+    while count <3:
+        print("Waiting 30 seconds")
+        sleep(30)
+        data = getTable(latestResultURL)
+        if data == "MissingMap(s)":
+            count = count +1
+        else:
+            print("All stats are now there")
+            lookAtTable(data)
+
 lastResult = ""#There is no last result so it is empty(the last result is the most recent web scraped result, so it doesnt scrape twice)
 while True:
     try:
@@ -186,14 +210,23 @@ while True:
         #above doesnt work anymore, tbh fair enough it was crap code
         latestResult = html.find("div", {"class":"result-con"}).find("a", href=True)#Finds the latest result
         latestResultURL = "".join([URL, latestResult["href"]])#Finds the HREF link, adds it to URL
+        missingMap = False
         if latestResultURL != lastResult:
             lastResult = latestResultURL
             print(latestResultURL)
             print("Received URL from HTML, scraping URL in 5 seconds...")
             sleep(5)
             data = getTable(latestResultURL)
-            lookAtTable(data)
+            if data == "MissingMap(s)":
+                missingMap = True
+            else:
+                lookAtTable(data)
         else:
             print("That was the old url, no need to scrape again!!!")
-        print("Done, waiting 90 seconds before scraping again...")
-        sleep(90)
+        if missingMap == True:
+            checkingForMap(latestResultURL)
+            print("Done, waiting 25 seconds before scraping again...")
+            sleep(25)
+        else:
+            print("Done, waiting 90 seconds before scraping again...")
+            sleep(90)
