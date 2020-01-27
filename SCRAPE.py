@@ -2,6 +2,7 @@ from time import sleep as sleep
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from bs4 import BeautifulSoup as BS
+from datetime import date
 
 
 URL = "https://www.hltv.org"
@@ -74,16 +75,25 @@ def getTable(url):
             print("RESULT MISSING DATA!")
             return("MissingMap(s)")
 
-        
+        #Getting all map names:
+        mapListNamesHTML = html.findAll("div",{"class":"mapname"})
+        mapListNames = []
+        for i in range(len(mapListNamesHTML)):
+            mapListNames.append(mapListNamesHTML[i].getText())
+        print(mapListNames)
+        #Map names done
+        #It doesnt matter if we take 3 maps, but two is played because it was a 2-0
+        #because in lookAtTable, we can deal with this...
         text = html.find("div", {"class":"padding preformatted-text"}).getText()
         print(text)
         text = html.find("div", {"class":"event text-ellipsis"}).getText()
-        print(text)
-        try:
+        print(text)#Event
+        print(date.today())
+        try:#rather yucky way of seeing if there is at least one stats table
+            #although i need to confirm this works at some point
             latestResult = html.find("div", {"class": "small-padding stats-detailed-stats"}).find("a", href=True)
         except:
             ohnoes()
-            #One issue could be that there is a table, but it doesnt have all the maps!
         else:
             url = "".join([URL, latestResult["href"]])
             print(url)
@@ -100,9 +110,9 @@ def getTable(url):
             else:#If there are no errors
                 #Scrapes
                 html = BS(webpage.read(), "html.parser")
-                if numberOfMaps == 1:
+                if numberOfMaps == 1:#Best of 1
                     latestResult = html.findAll("table", {"class":"stats-table"})
-                else:
+                else:#Others
                     mapListHTML = []
                     mapListURL = []
                     mapListHTML = html.findAll("a", {"class":"col stats-match-map standard-box a-reset inactive"})
@@ -113,7 +123,7 @@ def getTable(url):
 
         return(latestResult)
 
-def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is not a best of 3.
+def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is not a best of 1.
     mapsTables = []
     for i in range(len(mapListURL)):
         url = "".join([URL, mapListURL[i]])
@@ -134,7 +144,7 @@ def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is
                 mapsTables.append(each)
     return(mapsTables)
 
-def lookAtTable(data):
+def lookAtTable(data):#Data imported is the tables, not the whole html page
     numberOfMaps = (len(data)//2)#Theres two sets of tables for each map.
     
     for i in range(len(data)):
@@ -199,15 +209,15 @@ while True:
     else:#If there are no errors
         #Scrapes
         html = BS(webpage.read(), "html.parser")#the html is stored
-##        try:#If there is more than one featured results, it only removes one.
-##            html.find('h1', {"class": "standard-headline inline"})#if this exists(is there featured results)
-##            #messy.........
-##        except:
-##            print("There is no featured results")
-##        else:#if there is no errors, meaning there is featured results
-##            print("There is a featured results, removing!")
-##            html.find('div', {"class":"results-sublist"}).decompose()#no errors means there is a featured results, so this line removes the features results.
+        temp = html.find('div', {"class": "big-results"})#if this doesnt exists(is there featured results)
+            #messy.........
+        if temp == None:
+            print("There is no featured results")
+        else:#if there is no errors, meaning there is featured results
+            print("There is a featured results, removing!")
+            html.find('div', {"class":"big-results"}).decompose()#no errors means there is a featured results, so this line removes the features results.
         #above doesnt work anymore, tbh fair enough it was crap code
+        #still crap but ammended it so it works...
         latestResult = html.find("div", {"class":"result-con"}).find("a", href=True)#Finds the latest result
         latestResultURL = "".join([URL, latestResult["href"]])#Finds the HREF link, adds it to URL
         missingMap = False
