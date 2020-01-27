@@ -74,16 +74,25 @@ def getTable(url):
         else:
             print("RESULT MISSING DATA!")
             return("MissingMap(s)")
+        
+
+
+
+
+
 
         #Getting all map names:
-        mapListNamesHTML = html.findAll("div",{"class":"mapname"})
-        mapListNames = []
-        for i in range(len(mapListNamesHTML)):
-            mapListNames.append(mapListNamesHTML[i].getText())
-        print(mapListNames)
+        mapInformation = html.findAll("div",{"class":"mapholder"})
+        roundsWon = {}
+        for i in range(mapsCheck):
+            roundsWon.update({mapInformation[i].find("div",{"class":"mapname"}).getText():{str(mapInformation[i].find("div",{"class":"results-teamname text-ellipsis"}).getText()):int(mapInformation[i].find("div",{"class":"results-team-score"}).getText()),str((mapInformation[i].findAll("div",{"class":"results-teamname text-ellipsis"})[1]).getText()):int((mapInformation[i].findAll("div",{"class":"results-team-score"})[1]).getText())}})
+        print(roundsWon)
+
+
+
+
+        
         #Map names done
-        #It doesnt matter if we take 3 maps, but two is played because it was a 2-0
-        #because in lookAtTable, we can deal with this...
         text = html.find("div", {"class":"padding preformatted-text"}).getText()
         print(text)
         text = html.find("div", {"class":"event text-ellipsis"}).getText()
