@@ -1,60 +1,44 @@
-import mysql.connector
+import sqlite3
 
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  passwd="class7"
-)
+mydb = sqlite3.connect("CSGO-Results.db")
 
 #creating an instance of 'cursor' class which is used to execute the 'SQL' statements in 'Python'
-mycursor = mydb.cursor()
+cursor = mydb.cursor()
 
-def database():
+def database(db,cursor):
     print("Connecting to database")
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        passwd="class7",
-        database = "CSGOResults"
-        )
-    mycursor = mydb.cursor()
-    user = input("Do the tables already exist?(y/n)")
-    if user == "y":
-        mycursor.execute("DROP TABLE PlayerMap")
-        print(mycursor)
-        mycursor.execute("DROP TABLE TeamMap")
-        print(mycursor)
-        mycursor.execute("DROP TABLE Player")
-        print(mycursor)
-        mycursor.execute("DROP TABLE Team")
-        print(mycursor)
-        mycursor.execute("DROP TABLE Map")
-        print(mycursor)
-        mycursor.execute("DROP TABLE Game")
-        print(mycursor)
-        mycursor.execute("DROP TABLE Event")
-        print(mycursor)
-    mycursor.execute("CREATE TABLE Team (TeamID SMALLINT AUTO_INCREMENT NOT NULL PRIMARY KEY, TeamName TINYTEXT NOT NULL)")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE Player (PlayerID SMALLINT AUTO_INCREMENT NOT NULL PRIMARY KEY, Nickname TINYTEXT NOT NULL, FirstName TINYTEXT NOT NULL, LastName TINYTEXT NOT NULL, TeamID SMALLINT, FOREIGN KEY (TeamID) REFERENCES Team (TeamID))")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE Event (EventID SMALLINT AUTO_INCREMENT NOT NULL PRIMARY KEY, EventName TINYTEXT NOT NULL)")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE Game (GameID SMALLINT AUTO_INCREMENT NOT NULL PRIMARY KEY, Format TINYTEXT NOT NULL, NumberOfMaps TINYINT NOT NULL, Date DATE NOT NULL, EventID SMALLINT, FOREIGN KEY (EventID) REFERENCES Event(EventID))")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE Map (MapID SMALLINT AUTO_INCREMENT NOT NULL PRIMARY KEY, RoundsPlayed TINYINT NOT NULL, Map TINYTEXT NOT NULL, GameID SMALLINT, FOREIGN KEY(GameID) REFERENCES Game(GameID))")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE PlayerMap (MapID SMALLINT, PlayerID SMALLINT, Kills SMALLINT NOT NULL, Deaths SMALLINT NOT NULL, adr FLOAT NOT NULL, kast FLOAT NOT NULL, Rating FLOAT NOT NULL, FOREIGN KEY(MapID) REFERENCES Map(MapID), FOREIGN KEY (PlayerID) REFERENCES Player(PlayerID), PRIMARY KEY (MapID, PlayerID))")
-    print(mycursor)
-    mycursor.execute("CREATE TABLE TeamMap (MapID SMALLINT NOT NULL, TeamID SMALLINT NOT NULL, Won TINYINT NOT NULL, RoundsWon TINYINT NOT NULL, RoundsLost TINYINT NOT NULL, FOREIGN KEY(MapID) REFERENCES Map(MapID), FOREIGN KEY (TeamID) REFERENCES Team(TeamID), PRIMARY KEY (MapID, TeamID))")
-    print(mycursor)
-    print("done")
+    cursor = mydb.cursor()
+    cursor.execute("CREATE TABLE Team (TeamID INTEGER PRIMARY KEY,TeamName TEXT NOT NULL)")
+    print(cursor)
+    cursor.execute("CREATE TABLE Player (PlayerID INTEGER PRIMARY KEY,Nickname TEXT NOT NULL,TeamID INTEGER NOT NULL,FOREIGN KEY (TeamID) REFERENCES Team (TeamID))")
+    print(cursor)
+    cursor.execute("CREATE TABLE Event (EventID INTEGER PRIMARY KEY,EventName TEXT NOT NULL)")
+    print(cursor)
+    cursor.execute("CREATE TABLE Game (GameID INTEGER PRIMARY KEY,Format TEXT NOT NULL,NumberOfMaps INTEGER NOT NULL,Date TEXT NOT NULL,EventID INTEGER NOT NULL,FOREIGN KEY (EventID) REFERENCES Event(EventID))")
+    print(cursor)
+    cursor.execute("CREATE TABLE GameMap (GameMapID INTEGER PRIMARY KEY,RoundsPlayed INTEGER NOT NULL,MapName TEXT NOT NULL,GameID INTEGER NOT NULL,FOREIGN KEY(GameID) REFERENCES Game(GameID))")
+    print(cursor)
+    cursor.execute("CREATE TABLE PlayerMap (GameMapID INTEGER NOT NULL,PlayerID INTEGER NOT NULL,Kills INTEGER NOT NULL,Deaths INTEGER NOT NULL,adr REAL NOT NULL,kast REAL NOT NULL,Rating REAL NOT NULL,FOREIGN KEY(GameMapID) REFERENCES Map(GameMapID),FOREIGN KEY (PlayerID) REFERENCES Player(PlayerID),PRIMARY KEY (GameMapID, PlayerID))")
+    print(cursor)
+    cursor.execute("CREATE TABLE TeamMap (GameMapID INTEGER NOT NULL,TeamID INTEGER NOT NULL,Won INTEGER NOT NULL,RoundsWon INTEGER NOT NULL,RoundsLost INTEGER NOT NULL,FOREIGN KEY(GameMapID) REFERENCES Map(GameMapID),FOREIGN KEY (TeamID) REFERENCES Team(TeamID),PRIMARY KEY (GameMapID, TeamID))")
+    print(cursor)
+    print("Created tables.... Onto basic data entry....")
+    cursor.execute("INSERT INTO Team VALUES(0,'No Team')")
+    print(cursor)
+    print("Checking tbl Team..")
+    cursor.execute("COMMIT")
+    cursor.execute("SELECT * FROM Team")
+    print(cursor.fetchall())
+    cursor.execute("INSERT INTO Team (TeamName) VALUES('Test Team')")
+    cursor.execute("COMMIT")
+    cursor.execute("SELECT * FROM Team")
+    print(cursor.fetchall())
+    cursor.execute("DELETE FROM Team WHERE TeamID = 1")
+    cursor.execute("COMMIT")
+    cursor.execute("SELECT * FROM Team")
+    print(cursor.fetchall())
+    cursor.close()
+    db.close()
 
 
-user = input("This constructs the database, Does the database already exist?(y/n)")
-if user == "n":
-    mycursor.execute("CREATE DATABASE CSGOResults")
-    print(mycursor)
-    database()
-else:
-    database()
+database(mydb,cursor)
