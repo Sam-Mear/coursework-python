@@ -10,8 +10,6 @@ cursor = mydb.cursor()
 
 #order of data entry should be 
 #Team, Player, Event, Game, GameMap, PlayerMap, TeamMap
-playerTableInsert = []
-eventTableInsert = []
 gameTableInsert = []
 gameMapTableInsert = []
 playerMapTableInsert = []
@@ -174,10 +172,17 @@ def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is
     return(mapsTables)
 
 def checkIfTeamExists(teamName):
+    teamID = 0
     cursor.execute("SELECT * FROM Team WHERE TeamName = (?)",(teamName,))
-    if cursor.fetchall() == []:
-        return False#Team does not exist
-    return True#Team does exist.
+    temp = cursor.fetchall()
+    if temp == []:
+        return [False,teamID]#Team does not exist
+    for i in temp:#This is messy but it brings out the tuple from the list
+        if len(i)==2:#Makes sure there is only one item in the tuple, theres no reason as to why it shouldnt, but this is keeping sure.
+            teamID = i[0]
+        else:
+            print("ERROR checking a team's TeamID... Was there more than one team named " + teamName+"? Using returning 0as teamID")
+        return [True,teamID]#Team does exist.
 
 def playerDatabaseManager(playerName,teamID):# This subroutine checks if a player exists, if not the player is added, then it checks if the player's linked team is correct
     #First check is if player exists,
@@ -210,7 +215,9 @@ Map Number {0}
         currentTable = data[i]
         teamName = currentTable.find("th", {"class":"st-teamname text-ellipsis"}).getText()
         print(teamName)
-        if checkIfTeamExists(teamName) == True:
+        team = checkIfTeamExists(teamName)
+        teamID = team[1]
+        if team[0] == True:
             print("This team is already in the database.")
         else:
             print("This team is not in the database... adding...")
