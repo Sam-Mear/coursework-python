@@ -64,9 +64,11 @@ def getTable(url):
         #quick on the match page, hltv might have only had enough time for the first few maps, and
         #not the closing map.
         
-        #---IMPORTANT---#
-        #IF THERE IS AN ERROR BELOW THIS COMMENT, IT MEANS THERE ISNT A STATS TABLE YET
-        maplist = html.find("div",{"class":"box-headline flexbox nowrap header"})
+        try:
+            maplist = html.find("div",{"class":"box-headline flexbox nowrap header"})
+        except:
+            print("Oh, its a best of 1 but without any tables of data...")
+            return("MissingMap(s)")
         maplist = maplist.find("div",{"class":"flexbox nowrap"})#There would normally be loads of these div with class small-padding
         maplist = maplist.findAll("div",{"class":"small-padding"})
         #but i search only html for div class box-headline flexbox nowrap header, which is specific to one bit.
@@ -102,53 +104,75 @@ def getTable(url):
         
         text = html.find("div", {"class":"event text-ellipsis"}).getText()
         print(text)#Event
-        eventDatabaseEntry(text)
-        #gameDatabaseEntry(text, str(date.today()),mapsCheck, FoRMAt)
-        try:#rather yucky way of seeing if there is at least one stats table
-            #---IMPORTANT---#
-            #THIS DOES NOT WORK, LOOK ABOVE FOR OTHER IMPORTANT nOTE
-            #although i need to confirm this works at some point -  i dont think this does in hindsight...
-            #I also may move this to the top of the subroutine, as i think constant editing of this subroutine has moved its position/priority.
-            latestResult = html.find("div", {"class": "small-padding stats-detailed-stats"}).find("a", href=True)
-        except:
-            ohnoes()
+        eventID = eventDatabaseEntry(text)
+        if classWon == "2":
+            gameFormat = "Best of 3"
+        elif classWon == "3":
+            gameFormat = "Best of 5"
         else:
-            url = "".join([URL, latestResult["href"]])
-            print(url)
-            print("waiting 5 seconds")
-            sleep(5)
+            gameFormat = "Best of 1"
+        gameID = gameDatabaseEntry(gameFormat, numberOfMaps, str(date.today()), eventID)
+        for i in roundsWon:
+            print(i)
+            number = 0
+            for j in roundsWon[i]:
+                number += roundsWon[i][j]
+            print(number)
+            gameMapID = gameMapDatabaseEntry(i,number,gameID)
+        latestResult = html.find("div", {"class": "small-padding stats-detailed-stats"}).find("a", href=True)
+        url = "".join([URL, latestResult["href"]])
+        print(url)
+        print("waiting 5 seconds")
+        sleep(5)
 
-            req = Request(url, headers={'User-Agent':'Mozilla/6.0'})
-            try:
-                webpage = urlopen(req)
-            except HTTPError as e:#If there is a server error
-                print("e")#show the error
-            except URLError as e:#If URL does not exist
-                print("Server could not be found")
-            else:#If there are no errors
-                #Scrapes
-                html = BS(webpage.read(), "html.parser")
-                if numberOfMaps == 1:#Best of 1
-                    latestResult = html.findAll("table", {"class":"stats-table"})
-                else:#Others
-                    mapListHTML = []
-                    mapListURL = []
-                    mapListHTML = html.findAll("a", {"class":"col stats-match-map standard-box a-reset inactive"})
-                    for i in range(len(mapListHTML)):
-                        mapListURL.append(mapListHTML[i].get("href"))
-                    latestResult = sUbBrROuTiNE(mapListURL)
+        req = Request(url, headers={'User-Agent':'Mozilla/6.0'})
+        try:
+            webpage = urlopen(req)
+        except HTTPError as e:#If there is a server error
+            print("e")#show the error
+        except URLError as e:#If URL does not exist
+            print("Server could not be found")
+        else:#If there are no errors
+            #Scrapes
+            html = BS(webpage.read(), "html.parser")
+            if numberOfMaps == 1:#Best of 1
+                mapTableList = html.findAll("table", {"class":"stats-table"})
+            else:#Others
+                mapListHTML = []
+                mapListURL = []
+                mapListHTML = html.findAll("a", {"class":"col stats-match-map standard-box a-reset inactive"})
+                for i in range(len(mapListHTML)):
+                    mapListURL.append(mapListHTML[i].get("href"))
+                mapTableList = sUbBrROuTiNE(mapListURL)
 
 
-        return(latestResult)
+        return(mapTableList,roundsWon,gameMapID)
 
 def eventDatabaseEntry(eventName):
-    cursor.execute("SELECT EventID FROM Event WHERE EventName = (?)",(eventName,))
-    if cursor.fetchall() == []:
+    cursor.execute("SELECT * FROM Event WHERE EventName = (?)",(eventName,))
+    temp = cursor.fetchall()
+    if temp == []:
         cursor.execute("INSERT INTO Event (EventName) VALUES (?)",(eventName,))
         cursor.execute("COMMIT")
-        print("Event stored in database")
+        print("Event stored in database, getting ID")
+        cursor.execute("SELECT EventID FROM Event WHERE EventName = (?)",(eventName,))
+        for i in cursor.fetchall():
+            return(i[0])
     else:
-        print("Event is already in database.")
+        print("Event is already in database, getting ID")
+        for i in temp:#This is messy but it brings out the tuple from the list
+            if len(i)==2:#Makes sure there is only one item in the tuple, theres no reason as to why it shouldnt, but this is keeping sure.
+                return(i[0])
+    
+def gameDatabaseEntry(gameFormat, numberOfMaps, date, event):
+    cursor.execute("INSERT INTO Game (Format,NumberOfMaps,Date,EventID) VALUES (?,?,?,?)",(gameFormat, numberOfMaps, date, event,))
+    cursor.execute("COMMIT")
+    return(cursor.lastrowid)
+
+def gameMapDatabaseEntry(map, rounds, gameID):
+    cursor.execute("INSERT INTO gameMap (RoundsPlayed,MapName,GameID) VALUES (?,?,?)",(rounds,map,gameID,))
+    cursor.execute("COMMIT")
+    return(cursor.lastrowid)
 
 def sUbBrROuTiNE(mapListURL):#This subroutine only gets called when the match is not a best of 1.
     mapsTables = []
@@ -205,14 +229,19 @@ def playerDatabaseManager(playerName,teamID):# This subroutine checks if a playe
                 print("ERROR checking a player's TeamID... Was there more than one player named " + playerName+"?")
                 
 
-def lookAtTable(data):#Data imported is the tables, not the whole html page    
-    for i in range(len(data)):
+def lookAtTable(tableData, teamData, gameMapID):#Data imported is the tables, not the whole html page    
+    for i in range(len(tableData)):
         print("""
 
 Map Number {0}
 
 """.format(i/2))
-        currentTable = data[i]
+        if (i+1)%2==0:
+            for l in teamData:
+                roundCount = 0
+                for j in teamData[l]:
+                    roundCount += teamData[l][j]
+        currentTable = tableData[i]
         teamName = currentTable.find("th", {"class":"st-teamname text-ellipsis"}).getText()
         print(teamName)
         team = checkIfTeamExists(teamName)
@@ -257,9 +286,6 @@ Map Number {0}
             print("NEXT")
             print("")
             print("PLAYER:")
-def ohnoes():
-    print("oh no there is no table")
-    #One issue could be that there is a table, but it doesnt have all the maps!
 
 def checkingForMap(URL):
     print("Only goes here if there is a stats table missing")
@@ -268,12 +294,12 @@ def checkingForMap(URL):
     while count <3:
         print("Waiting 30 seconds")
         sleep(30)
-        data = getTable(latestResultURL)#I dont think <-- will work....... i think i need to parse it in...
-        if data == "MissingMap(s)":
+        data = getTable(URL)
+        if data[0] == "MissingMap(s)":
             count = count +1
         else:
             print("All stats are now there")
-            lookAtTable(data)
+            lookAtTable(data[0],data[1],data[2])
 
 lastResult = ""#There is no last result so it is empty(the last result is the most recent web scraped result, so it doesnt scrape twice)
 while True:
@@ -303,12 +329,12 @@ while True:
             print("Received URL from HTML, scraping URL in 5 seconds...")
             sleep(5)
             data = getTable(latestResultURL)
-            if data == "MissingMap(s)":
+            if data[0] == "MissingMap(s)":
                 missingMap = True
-            elif data == "False":
+            elif data[0] == "False":
                 print("ignored!")
             else:
-                lookAtTable(data)
+                lookAtTable(data[0],data[1],data[2])
         else:
             print("That was the old url, no need to scrape again!!!")
         if missingMap == True:
