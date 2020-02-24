@@ -1,4 +1,8 @@
 from tkinter import *
+import sqlite3,turtle
+from datetime import datetime, timedelta
+mydb = sqlite3.connect("CSGO-Results.db")
+cursor = mydb.cursor()
 
 class Window(Frame):
     def __init__(self, master):
@@ -7,103 +11,153 @@ class Window(Frame):
         self.master = master
 
         self.master.title("Program name")
+        self.date = str(datetime.today() - timedelta(90)).split(" ")[0]
+        self.date = self.date.split("-")
+        self.date[0] = self.date[0][2:4]
+        self.date = "-".join(self.date)
         self.grid()
         
     def mainMenu(self):
         self.eventMvpPicker = Button(self, text = "Event MVP Picker")
         self.eventMvpPicker.grid(row=1,column=0)
-        self.teamsOnRise = Button(self, text = "Teams on the Rise")
+        self.teamsOnRise = Button(self, text = "Players on the Rise")
         self.teamsOnRise.grid(row=2,column=0)
         self.line = Label(self, text = "LINE")
         self.line.grid(row=0,column=1)
-        self.lab1 = Label(self, text = "Noteable results list")
-        self.lab1.grid(row=0,column=3)
-        self.resultsListL = Listbox(self)
-        self.resultsListL.grid(row=1,column=2)
-        self.resultsListL.insert(1, "Team 1 ")
-        self.resultsListM = Listbox(self)
-        self.resultsListM.grid(row=1, column=3)
-        self.resultsListM.insert(1, "Team 2")
-        self.resultsListR = Listbox(self)
-        self.resultsListR.grid(row=1, column=4)
-        self.resultsListR.insert(1, "Result")
-        self.lab2 = Label(self, text = "Improving players")
-        self.lab2.grid(row=2,column=3)
-        self.improvPlayersL = Listbox(self)
-        self.improvPlayersL.grid(row=3,column=2)
+        self.lab1 = Label(self, text = "Performing players")
+        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING>1.3 AND subqry.MAPCOUNT > 10",(self.date,))
+        self.qry1 = cursor.fetchall()
+        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING<0.75 AND subqry.MAPCOUNT > 10",(self.date,))
+        self.qry2 = cursor.fetchall()
+        self.lab1.grid(row=1,column=3)
+        self.improvPlayersL = Listbox(self,height = (len(self.qry1)+1))
+        self.improvPlayersL.grid(row=2,column=2)
         self.improvPlayersL.insert(1, "Player Name")
-        self.improvPlayersM = Listbox(self)
-        self.improvPlayersM.grid(row=3, column=3)
-        self.improvPlayersM.insert(1, "Team Name")
-        self.improvPlayersR = Listbox(self)
-        self.improvPlayersR.grid(row=3, column=4)
+        self.improvPlayersM = Listbox(self,height = (len(self.qry1)+1))
+        self.improvPlayersM.grid(row=2, column=3)
+        self.improvPlayersM.insert(1, "Num Maps")
+        self.improvPlayersR = Listbox(self,height = (len(self.qry1)+1))
+        self.improvPlayersR.grid(row=2, column=4)
         self.improvPlayersR.insert(1, "Rating")
+        for i in range (len(self.qry1)):
+            cursor.execute("SELECT Nickname FROM Player WHERE PlayerID = (?)",(int(self.qry1[i][0]),))
+            self.improvPlayersL.insert(i+2, str(cursor.fetchall()[0][0]))
+            self.improvPlayersM.insert(i+2, str(self.qry1[i][2]))
+            self.improvPlayersR.insert(i+2,str(self.qry1[i][1]))
         self.lab2 = Label(self, text = "Underperforming players")
-        self.lab2.grid(row=4,column=3)
-        self.underPlayersL = Listbox(self)
-        self.underPlayersL.grid(row=5,column=2)
+        self.lab2.grid(row=3,column=3)
+        self.underPlayersL = Listbox(self,height = (len(self.qry2)+1))
+        self.underPlayersL.grid(row=4,column=2)
         self.underPlayersL.insert(1, "Player Name")
-        self.underPlayersM = Listbox(self)
-        self.underPlayersM.grid(row=5, column=3)
-        self.underPlayersM.insert(1, "Team Name")
-        self.underPlayersR = Listbox(self)
-        self.underPlayersR.grid(row=5, column=4)
+        self.underPlayersM = Listbox(self,height = (len(self.qry2)+1))
+        self.underPlayersM.grid(row=4, column=3)
+        self.underPlayersM.insert(1, "Num Maps")
+        self.underPlayersR = Listbox(self,height = (len(self.qry2)+1))
+        self.underPlayersR.grid(row=4, column=4)
         self.underPlayersR.insert(1, "Rating")
+        for i in range (len(self.qry2)):
+            cursor.execute("SELECT Nickname FROM Player WHERE PlayerID = (?)",(int(self.qry2[i][0]),))
+            self.underPlayersL.insert(i+2, str(cursor.fetchall()[0][0]))
+            self.underPlayersM.insert(i+2, str(self.qry2[i][2]))
+            self.underPlayersR.insert(i+2,str(self.qry2[i][1]))
+        self.selectPlayerButton = Button(self,text="Select Player",command = self.testtt)
+        self.selectPlayerButton.grid(row=5,column=3)
 
 #listbox
 
+    def testtt(self):
+        if len(self.improvPlayersL.curselection()) > 0:
+            playerID = (self.qry1[self.improvPlayersL.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        elif len(self.improvPlayersM.curselection()) > 0:
+            playerID = (self.qry1[self.improvPlayersM.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        elif len(self.improvPlayersR.curselection()) > 0:
+            playerID = (self.qry1[self.improvPlayersR.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        #underperforimg players
+        elif len(self.underPlayersL.curselection()) > 0:
+            playerID = (self.qry2[self.underPlayersL.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        elif len(self.underPlayersM.curselection()) > 0:
+            playerID = (self.qry2[self.underPlayersM.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        elif len(self.underPlayersR.curselection()) > 0:
+            playerID = (self.qry2[self.underPlayersR.curselection()[0]-1][0])
+            self.destroyMainMenu()
+            self.graph(playerID)
+        else:
+            print("YOU HAVENT SELECTED ANYHTING BITHC.")
+
+    def destroyMainMenu(self):
+        self.eventMvpPicker.destroy()
+        self.teamsOnRise.destroy()
+        self.line.destroy()
+        self.lab1.destroy()
+        self.lab2.destroy()
+        self.improvPlayersL.destroy()
+        self.improvPlayersM.destroy()
+        self.improvPlayersR.destroy()
+        self.underPlayersL.destroy()
+        self.underPlayersM.destroy()
+        self.underPlayersR.destroy()
+        self.selectPlayerButton.destroy()
+        
+
+    def graph(self,playerID):
+        print(playerID)
+            
+        cursor.execute("SELECT Game.Date, Rating FROM PlayerMap, GameMap, Game WHERE PlayerID = (?) AND PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?)",(playerID,self.date))
+        playerRatings = cursor.fetchall()
+        print(playerRatings)
+        num = len(playerRatings)
+        coords = []
+        for i in range (num):
+            coords.append([(800/num*i)-400,float((playerRatings[i][1])-1)*300])
+        ##### setup #######
+        print(coords)
+        h,w=600,800
+        canvas=Canvas(master=root,height=h,width=w)
+        pen=turtle.RawTurtle(canvas)
+        pen2=turtle.RawTurtle(canvas)
+        pen.hideturtle()
+        pen2.hideturtle()
+        pen.speed(0)
+        pen2.speed(0)
+        pen2.color("blue")
+        ####  axes   ############
+        pen.penup()
+        pen.goto(-w//2,0)
+        pen.pendown()
+        pen.goto(w//2,0)
+        pen.penup()
+        pen.goto(-1,-h//2)
+        pen.pendown()
+        pen.goto(-1,h//2)
+        pen.penup()
+        ########## axis labels ###########
+        pen.goto(-w//2+30,-20)
+        pen.write("-"+str(w//2)+",0")
+        pen.goto(w//2-30,-20)
+        pen.write(str(w//2)+",0")
+        pen.goto(20,-h//2+30)
+        pen.write("0,-"+str(h//2))
+        pen.goto(20,h//2-30)
+        pen.write("0,"+str(h//2))
+        ########  coords  #################
+        pen2.penup()
+        for i in coords:
+            pen2.goto(i)
+            pen2.pendown()
+        canvas.grid(row=0,column=0)
+
     def window(self):# new seperate window.
         window = Toplevel(self.master)
-        
-##    def teamToMainMenu(self):
-##        self.lab1.destroy()
-##        self.inp.destroy()
-##        self.lab2.destroy()
-##        self.temp1.destroy()
-##        self.temp2.destroy()
-##        self.lab3.destroy()
-##        self.lab4.destroy()
-##        self.temp3.destroy()
-##        self.temp4.destroy()
-##        self.b1.destroy()
-##        self.mainMenu()
-##    def regTeam(self):
-##        self.b1.destroy()
-##        self.b2.destroy()
-##        self.b3.destroy()
-##        self.b4.destroy()
-##        self.lab1 = Label(self, text = "Team Name:")
-##        self.lab1.grid(row=0,column = 0)
-##        self.inp = Entry(self)
-##        self.inp.grid(row=0,column=1)
-##        self.lab2 = Label(self,text = "Individual or Team?")
-##        self.lab2.grid(row=1,column=0)
-##        
-##        self.temp1 = Label(self,text="Individual")
-##        self.temp1.grid(row=2,column=0)
-##        self.temp2 = Label(self,text="Team")
-##        self.temp2.grid(row=3,column=0)
-##
-##        self.lab3 = Label(self,text="Only for a few events?")
-##        self.lab3.grid(row=4,column=0)
-##        self.lab4 = Label(self,text="Excludes them from the main leaderboard")
-##        self.lab4.config(font=("Calibri", 7))
-##        self.lab4.grid(row=5,column=0)
-##        
-##        self.temp3 = Label(self, text="Yes")
-##        self.temp3.grid(row=6,column=0)
-##        self.temp4 = Label(self, text="No")
-##        self.temp4.grid(row=7, column=0)
-##        
-##        self.b1 = Button(self, text = "Submit", command = self.teamToMainMenu)
-##        self.b1.grid(row=8, column = 0)
-##    def recEvent(self):
-##        self.b1.destroy()
-##        self.b2.destroy()
-##        self.b3.destroy()
-##        self.b4.destroy()
-##        self.lab1= Label(self, text="Select event name:")
-##        self.lab1.grid(row=0,column=0)
         
 
 

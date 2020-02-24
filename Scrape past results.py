@@ -14,7 +14,7 @@ cursor = mydb.cursor()
 URL = "https://www.hltv.org"
 req = Request("https://www.hltv.org/results", headers={'User-Agent':'Mozilla/6.0'})
 
-def lookAtResult(url):
+def lookAtResult(url,date):
     req = Request(url, headers={'User-Agent':'Mozilla/6.0'})
     try:
         webpage = urlopen(req)
@@ -60,8 +60,6 @@ def lookAtResult(url):
         #quick on the match page, hltv might have only had enough time for the first few maps, and
         #not the closing map.
         
-        #PSEUDO CODE ON THIS SECOND CHECK PLEASEEE
-
         try:
             maplist = html.find("div",{"class":"box-headline flexbox nowrap header"})
             maplist = maplist.find("div",{"class":"flexbox nowrap"})#There would normally be loads of these div with class small-padding
@@ -103,14 +101,13 @@ def lookAtResult(url):
         text = html.find("div", {"class":"event text-ellipsis"}).getText()
         print(text)#Event
         eventID = eventDatabaseEntry(text)
-        #below does not have best of 2 :((
         if classWon == "2":
             gameFormat = "Best of 3"
         elif classWon == "3":
             gameFormat = "Best of 5"
         else:
             gameFormat = "Best of 1"
-        gameID = gameDatabaseEntry(gameFormat, numberOfMaps, str(date.today()), eventID)
+        gameID = gameDatabaseEntry(gameFormat, numberOfMaps, date, eventID)
         latestResult = html.find("div", {"class": "small-padding stats-detailed-stats"}).find("a", href=True)
         url = "".join([URL, latestResult["href"]])
         print(url)
@@ -318,7 +315,8 @@ def checkingForMap(URL):
             lookAtTable(data[0],data[1],data[2])
 
 
-def getRecentResult():
+def getAllResultsOnPage(resultsPage):
+    req = Request(resultsPage, headers={'User-Agent':'Mozilla/6.0'})
     try:
         webpage = urlopen(req)#Open hltv results page
     except HTTPError as e:#If there is a server error
@@ -336,39 +334,77 @@ def getRecentResult():
             print("There is a featured results, removing!")
             html.find('div', {"class":"big-results"}).decompose()#no errors means there is a featured results, so this line removes the features results.
         #still crap but ammended it so it works...
-        latestResult = html.find("div", {"class":"result-con"}).find("a", href=True)#Finds the latest result
-        latestResultURL = "".join([URL, latestResult["href"]])#Finds the HREF link, adds it to URL
-        return latestResultURL
+        #<div class="results-sublist"><span class="standard-headline">Results for November 16th 2019</span>
+        returnedList = []
+        latestResult = html.findAll("div", {"class":"results-sublist"})
+        for i in range(len(latestResult)):
+            dateString = latestResult[i].find("span", {"class":"standard-headline"}).getText()
+            string2 = (dateString.split('for ')[1])
+            string3 = string2.split(' ')
+            string3[1] = string3[1].split('th')[0]
+            string3[2] = string3[2].split('0')[1]
+            if string3[0] == "November":
+                string3[0] = "11"
+            elif string3[0] == "December":
+                string3[0] = "12"
+            elif string3[0] == "January":
+                string3[0] = "01"
+            elif string3[0] == "February":
+                string3[0] = "02"
+            list1 = [string3[2],string3[0],string3[1]]
+            print("-".join(list1))
+            returnedList.append("-".join(list1))
+            results = latestResult[i].findAll("div", {"class":"result-con"})
+            for j in range(len(results)):
+                results[j] = results[j].find("a", href=True)
+                results[j] = "".join([URL, results[j]["href"]])
+            returnedList.append(results)
+        latestResult = html.findAll("div", {"class":"result-con"})#Finds the latest result
+        return returnedList
         
         
 def main():
+    resultsPage = ["https://www.hltv.org/results?offset=","36"]
     lastResult = ''
-    while True:
-        resultURL = getRecentResult()
-        if resultURL != lastResult:
-            lastResult = resultURL
-            print("Received URL from HTML, scraping URL in 5 seconds...")
-            sleep(5)
-            data = lookAtResult(resultURL)
-            missingMap = False
-            if data == "MissingMap(s)":
-                missingMap = True
-            elif data == "False":
-                print("ignored!")
+    while int(resultsPage[1])>=0:
+        resultURL = getAllResultsOnPage("".join(resultsPage))
+        print(resultURL)
+        resultURL = ['2-02-17', ['https://www.hltv.org/matches/2339143/w7m-vs-soberano-clutch-season-2', 'https://www.hltv.org/matches/2339652/skade-vs-spirit-flashpoint-europe-closed-qualifier', 'https://www.hltv.org/matches/2339643/hard-legion-vs-nemiga-oga-counter-pit-season-7', 'https://www.hltv.org/matches/2339631/unicorns-of-love-vs-japaleno-esea-mdl-season-33-europe']]
+        for i in range(len(resultURL)):
+            if i ==0 or (i%2)==0:
+                print(resultURL[i])
+                date = resultURL[i]
             else:
-                url = data[0];numberOfMaps = data[1];gameID = data[2];roundsWon = data[3]
-                print("waiting 5 seconds")
-                sleep(5)
-                data = getTable(url,numberOfMaps)
-                if data[0]==True:#If it is a best of 1
-                    lookAtTable(data[1],gameID,roundsWon)
-                else:#not best of 1
-                    multipleMapsHandler(data[1],gameID,roundsWon)
-            if missingMap ==True:
-                checkingForMap(resultURL)
-        else:
-            print("That was the old url, no need to scrape again!!!")
-        print("waiting 90 seconds before scraping again")
-        sleep(90)
+                for j in range(len(resultURL[i])):
+
+                    print("waiting 10 seconds")
+                    sleep(10)
+                    data = lookAtResult(resultURL[i][j],date)
+                    missingMap = False
+                    if data == "MissingMap(s)":
+                        missingMap = True
+                    elif data == "False":
+                        print("ignored!")
+                    else:
+                        print(data)
+                        url = data[0]
+                        numberOfMaps = data[1]
+                        gameID = data[2]
+                        roundsWon = data[3]
+                        print("waiting 5 seconds")
+                        sleep(5)
+                        data = getTable(url,numberOfMaps)
+                        if data[0]==True:#If it is a best of 1
+                            lookAtTable(data[1],gameID,roundsWon)
+                        else:#not best of 3
+                            multipleMapsHandler(data[1],gameID,roundsWon)
+                else:
+                    print("That was the old url, no need to scrape again!!!")
+        print("waiting 120 seconds...")
+        sleep(120)
+        resultsPage[1] = str(int(resultsPage[1]) - 100)
+
+        
+            
 
 main()

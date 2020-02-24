@@ -1,0 +1,1 @@
+#SELECT GameMapID,count(TeamID),PlayerID FROM PlayerMap,TeamMap WHERE PlayerID = 
