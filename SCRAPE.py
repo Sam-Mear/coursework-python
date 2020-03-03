@@ -214,7 +214,7 @@ def playerDatabaseManager(playerName,nationality,teamID):# This subroutine check
         return(cursor.lastrowid)
     #Onto second check... Only relevent to players that are already in the database.
     else:
-        cursor.execute("SELECT TeamID,PlayerID FROM Player WHERE NickName = (?)",(playerName,))
+        cursor.execute("SELECT TeamID,PlayerID FROM Player WHERE NickName = (?) AND Nationality = (?)",(playerName,nationality))
         for i in cursor.fetchall():#This is messy but it brings out the tuple from the list
             if len(i)==2:#Makes sure there is only one item in the tuple, theres no reason as to why it shouldnt, but this is keeping sure.
                 if i[0] == teamID:

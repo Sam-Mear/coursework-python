@@ -1,6 +1,6 @@
 from tkinter import *
 import sqlite3,turtle
-from datetime import datetime, timedelta
+from datetime import date, timedelta, datetime
 mydb = sqlite3.connect("CSGO-Results.db")
 cursor = mydb.cursor()
 
@@ -11,11 +11,8 @@ class Window(Frame):
         self.master = master
 
         self.master.title("Program name")
-        self.date = str(datetime.today() - timedelta(90)).split(" ")[0]
-        self.date = self.date.split("-")
-        self.date[0] = self.date[0][2:4]
-        self.date = "-".join(self.date)
-        self.grid()
+        self.date = date.today() - timedelta(90)
+        self.grid(row=0,column=0)
         
     def mainMenu(self):
         self.eventMvpPicker = Button(self, text = "Event MVP Picker")
@@ -25,9 +22,9 @@ class Window(Frame):
         self.line = Label(self, text = "LINE")
         self.line.grid(row=0,column=1)
         self.lab1 = Label(self, text = "Performing players")
-        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING>1.3 AND subqry.MAPCOUNT > 10",(self.date,))
+        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING>1.3 AND subqry.MAPCOUNT > 10",(str(self.date),))
         self.qry1 = cursor.fetchall()
-        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING<0.75 AND subqry.MAPCOUNT > 10",(self.date,))
+        cursor.execute("SELECT subqry.PlayerID, round(subqry.AVERAGERATING,2), subqry.MAPCOUNT FROM (SELECT PlayerID, avg(Rating) AVERAGERATING,COUNT(Rating) MAPCOUNT FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) GROUP BY PlayerID)AS subqry WHERE subqry.AVERAGERATING<0.75 AND subqry.MAPCOUNT > 10",(str(self.date),))
         self.qry2 = cursor.fetchall()
         self.lab1.grid(row=1,column=3)
         self.improvPlayersL = Listbox(self,height = (len(self.qry1)+1))
@@ -66,28 +63,28 @@ class Window(Frame):
 #listbox
 
     def testtt(self):
-        if len(self.improvPlayersL.curselection()) > 0:
+        if len(self.improvPlayersL.curselection()) > 0 and self.improvPlayersL.curselection()[0] != 0:
             playerID = (self.qry1[self.improvPlayersL.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
-        elif len(self.improvPlayersM.curselection()) > 0:
+        elif len(self.improvPlayersM.curselection()) > 0 and self.improvPlayersM.curselection()[0] != 0:
             playerID = (self.qry1[self.improvPlayersM.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
-        elif len(self.improvPlayersR.curselection()) > 0:
+        elif len(self.improvPlayersR.curselection()) > 0 and self.improvPlayersR.curselection()[0] != 0:
             playerID = (self.qry1[self.improvPlayersR.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
         #underperforimg players
-        elif len(self.underPlayersL.curselection()) > 0:
+        elif len(self.underPlayersL.curselection()) > 0 and self.underPlayersL.curselection()[0] != 0:
             playerID = (self.qry2[self.underPlayersL.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
-        elif len(self.underPlayersM.curselection()) > 0:
+        elif len(self.underPlayersM.curselection()) > 0 and self.underPlayersM.curselection()[0] != 0:
             playerID = (self.qry2[self.underPlayersM.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
-        elif len(self.underPlayersR.curselection()) > 0:
+        elif len(self.underPlayersR.curselection()) > 0 and self.underPlayersR.curselection()[0] != 0:
             playerID = (self.qry2[self.underPlayersR.curselection()[0]-1][0])
             self.destroyMainMenu()
             self.graph(playerID)
@@ -112,24 +109,58 @@ class Window(Frame):
     def graph(self,playerID):
         print(playerID)
             
-        cursor.execute("SELECT Game.Date, Rating FROM PlayerMap, GameMap, Game WHERE PlayerID = (?) AND PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?)",(playerID,self.date))
+        cursor.execute("SELECT Game.Date, Rating FROM PlayerMap, GameMap, Game WHERE PlayerID = (?) AND PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) ORDER BY Date DESC",(playerID,str(self.date)))
         playerRatings = cursor.fetchall()
-        print(playerRatings)
+        average =0.0
+        playerRatingsDate = []
         num = len(playerRatings)
         coords = []
-        for i in range (num):
-            coords.append([(800/num*i)-400,float((playerRatings[i][1])-1)*300])
+        for i in range(len(playerRatings)):
+            average += float(playerRatings[i][1])
+            print((((int((str(datetime.strptime(playerRatings[i][0],'%Y-%m-%d').date()- self.date)).split(" day")[0])-90)*-1)-45)*8)
+            playerRatingsDate.append((((int((str(datetime.strptime(playerRatings[i][0],'%Y-%m-%d').date()- self.date)).split(" day")[0])-90)*-1)-45)*8)
+        count = 1
+        count2 = 1
+        futurecharacter = ''
+        outputstring = []
+        for each in playerRatingsDate:
+            try:
+                futurecharacter = playerRatingsDate[count2]
+            except:
+                outputstring.append(str(count))
+                break
+            if each == futurecharacter:
+                count +=1
+            else:
+                outputstring.append(str(count))
+                count = 1
+            count2 += 1
+        temp = 0
+        for i in range(len(outputstring)):
+            templist = playerRatings[temp:temp+int(outputstring[i])]
+            tempnumber = 0.0
+            for j in range(len(templist)):
+                tempnumber += float(templist[j][1])
+            coords.append([playerRatingsDate[temp],((tempnumber/len(templist))-1)*300])
+            temp += int(outputstring[i])
+        average = average/len(playerRatings)
+        print(average)
+        avgcoords = [[-400,(average-1)*300],[400,(average-1)*300]]
+        
         ##### setup #######
-        print(coords)
-        h,w=600,800
+        h,w=600,720
         canvas=Canvas(master=root,height=h,width=w)
         pen=turtle.RawTurtle(canvas)
         pen2=turtle.RawTurtle(canvas)
+        pen3=turtle.RawTurtle(canvas)
         pen.hideturtle()
         pen2.hideturtle()
+        pen3.hideturtle()
         pen.speed(0)
         pen2.speed(0)
+        pen3.speed(0)
         pen2.color("blue")
+        pen3.color("red")
         ####  axes   ############
         pen.penup()
         pen.goto(-w//2,0)
@@ -154,7 +185,25 @@ class Window(Frame):
         for i in coords:
             pen2.goto(i)
             pen2.pendown()
-        canvas.grid(row=0,column=0)
+        pen3.penup()
+        for i in avgcoords:
+            pen3.goto(i)
+            pen3.pendown()
+        canvas.grid(row=0,column=1)
+
+        ###### UI Around Graph ############################
+        self.buttons = Frame(self.master,width=0)
+        self.buttons.grid(row=0,column=0,sticky="NW")
+        self.testLab = Label(self.buttons,text="TESSTTT")
+        self.testLab.grid(row=0,column=0)
+        self.title = Label(self.buttons,text="Helloooooo graphhh")
+        self.title.grid(row=0,column=1)
+        self.averageLabel = Label(self.buttons,text="Average:")
+        self.averageLabel.grid(row=2,column=0,sticky="E")
+        self.average = Label(self.buttons,text=average)
+        self.average.grid(row=2,column=1,sticky="W")
+        self.backButton = Button(self.buttons, text = "Back" )
+        self.backButton.grid(row=3,column=1)
 
     def window(self):# new seperate window.
         window = Toplevel(self.master)
