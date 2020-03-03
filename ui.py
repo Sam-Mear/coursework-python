@@ -15,7 +15,7 @@ class Window(Frame):
         self.grid(row=0,column=0)
         
     def mainMenu(self):
-        self.eventMvpPicker = Button(self, text = "Event MVP Picker")
+        self.eventMvpPicker = Button(self, text = "Event MVP Picker", command = self.transEventMVPPicker)
         self.eventMvpPicker.grid(row=1,column=0)
         self.teamsOnRise = Button(self, text = "Players on the Rise")
         self.teamsOnRise.grid(row=2,column=0)
@@ -62,7 +62,31 @@ class Window(Frame):
 
 #listbox
 
+    def transEventMVPPicker(self):
+        self.destroyMainMenu()
+        self.eventMVPPicker()
+
+    def eventMVPPicker(self):
+        cursor.execute("SELECT EventName, Event.EventID FROM Event, Game WHERE Date > (?) AND  Game.EventID = Event.EventID GROUP BY EventName",(date.today() - timedelta(20),))
+        self.eventNamesQRY = cursor.fetchall()
+        self.eventNames = Listbox(self,height = (len(self.eventNamesQRY)+1),width = 70)
+        self.eventNames.grid(row=0,column=0)
+        self.eventNames.insert(1, "EventName,EventID")
+        for i in range(len(self.eventNamesQRY)):
+            self.eventNames.insert(i+2,str(self.eventNamesQRY[i]))
+        self.buttonSelectEvent = Button(self,text="Select Event",command = self.getEventSelection).grid(row=0,column=1)
+
+    def getEventSelection(self):
+        if len(self.eventNames.curselection())>0 and self.eventNames.curselection() != 0:
+            eventID = self.eventNamesQRY[self.eventNames.curselection()[0]-1][1]
+            cursor.execute("SELECT avg(Rating), PlayerID FROM Event, Game, GameMap, PlayerMap WHERE Event.EventID = (?) AND Event.EventID = Game.EventID AND GameMap.GameID = Game.GameID AND PlayerMap.GameMapID = GameMap.GameMapID GROUP BY PlayerID ORDER BY avg(Rating) DESC LIMIT 5",(eventID,))
+            self.top5 = cursor.fetchall()
+            print(self.top5)
+        else:
+            print("YOU DIDNT SELECT ANYTHING CUNT")
+
     def testtt(self):
+        print(self.improvPlayersL.curselection())
         if len(self.improvPlayersL.curselection()) > 0 and self.improvPlayersL.curselection()[0] != 0:
             playerID = (self.qry1[self.improvPlayersL.curselection()[0]-1][0])
             self.destroyMainMenu()
@@ -117,7 +141,6 @@ class Window(Frame):
         coords = []
         for i in range(len(playerRatings)):
             average += float(playerRatings[i][1])
-            print((((int((str(datetime.strptime(playerRatings[i][0],'%Y-%m-%d').date()- self.date)).split(" day")[0])-90)*-1)-45)*8)
             playerRatingsDate.append((((int((str(datetime.strptime(playerRatings[i][0],'%Y-%m-%d').date()- self.date)).split(" day")[0])-90)*-1)-45)*8)
         count = 1
         count2 = 1
