@@ -343,14 +343,16 @@ def getAllResultsOnPage(resultsPage):
             string3 = string2.split(' ')
             string3[1] = string3[1].split('th')[0]
             string3[2] = string3[2].split('0')[1]
-            if string3[0] == "November":
-                string3[0] = "11"
+            if string3[0] == "March":
+                string3[0] = "03"
             elif string3[0] == "December":
                 string3[0] = "12"
             elif string3[0] == "January":
                 string3[0] = "01"
             elif string3[0] == "February":
                 string3[0] = "02"
+            if string3[2] == "2":
+                string3[2] = "2020"
             list1 = [string3[2],string3[0],string3[1]]
             print("-".join(list1))
             returnedList.append("-".join(list1))
@@ -364,12 +366,12 @@ def getAllResultsOnPage(resultsPage):
         
         
 def main():
-    resultsPage = ["https://www.hltv.org/results?offset=","36"]
+    resultsPage = ["https://www.hltv.org/results?offset=","2"]
     lastResult = ''
     while int(resultsPage[1])>=0:
         resultURL = getAllResultsOnPage("".join(resultsPage))
         print(resultURL)
-        resultURL = ['2-02-17', ['https://www.hltv.org/matches/2339143/w7m-vs-soberano-clutch-season-2', 'https://www.hltv.org/matches/2339652/skade-vs-spirit-flashpoint-europe-closed-qualifier', 'https://www.hltv.org/matches/2339643/hard-legion-vs-nemiga-oga-counter-pit-season-7', 'https://www.hltv.org/matches/2339631/unicorns-of-love-vs-japaleno-esea-mdl-season-33-europe']]
+        resultURL = ["2020-03-04",["https://www.hltv.org/matches/2339967/red-canids-vs-isurus-americas-minor-south-america-closed-qualifier-esl-one-rio-2020"],"2020-03-05",["https://www.hltv.org/matches/2339806/detona-vs-big-flashpoint-global-qualifier-pinnacle-open","https://www.hltv.org/matches/2339984/divine-vs-mythic-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339988/big-frames-vs-infinity-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339987/livid-vs-station7-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339985/triumph-vs-rugratz-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339765/bad-news-bears-vs-eunited-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339986/swole-identity-vs-in-the-lab-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339989/livid-vs-infinity-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339991/recon-5-vs-new-england-whalers-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339990/under-21-vs-station7-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339992/mythic-vs-in-the-lab-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339824/swole-identity-vs-triumph-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339969/imperial-vs-boom-americas-minor-south-america-closed-qualifier-esl-one-rio-2020","https://www.hltv.org/matches/2339968/teamone-vs-pain-americas-minor-south-america-closed-qualifier-esl-one-rio-2020","https://www.hltv.org/matches/2339993/livid-vs-new-england-whalers-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339807/copenhagen-flames-vs-chaos-flashpoint-global-qualifier-pinnacle-open","https://www.hltv.org/matches/2339994/triumph-vs-recon-5-esea-mdl-season-33-north-america","https://www.hltv.org/matches/2339974/skyfire-vs-rooster-esl-australia-nz-championship-season-10","https://www.hltv.org/matches/2339885/paradox-vs-markandlarry-lpl-pro-league-season-4","https://www.hltv.org/matches/2339977/airborne-vs-avant-esea-mdl-season-33-australia","https://www.hltv.org/matches/2339983/ehome-vs-invictus-huya-pro-league-spring-2020","https://www.hltv.org/matches/2339981/d13-vs-updraft-asia-minor-east-asia-closed-qualifier-esl-one-rio-2020","https://www.hltv.org/matches/2339884/pc419-vs-rooster-lpl-pro-league-season-4","https://www.hltv.org/matches/2339887/i-sleep-vs-fury-esea-mdl-season-33-australia","https://www.hltv.org/matches/2339980/ignis-vs-mvp-pk-asia-minor-east-asia-closed-qualifier-esl-one-rio-2020"]]
         for i in range(len(resultURL)):
             if i ==0 or (i%2)==0:
                 print(resultURL[i])
