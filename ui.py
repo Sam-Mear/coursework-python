@@ -39,7 +39,7 @@ class Window(Frame):
         self.teamsOnTheDecline.grid(row=5,column=0,pady= 5)
         self.updatePlayerTeamsButton = Button(self.mainMenuButtonsFrame, text = "Update player's teams", relief = GROOVE, command = self.updatePlayerTeams)
         self.updatePlayerTeamsButton.grid(row=6,column=0,pady= 5)
-        self.manualResultEntry = Button(self.mainMenuFrame,text="Manual Result Entry", relief = GROOVE)
+        self.manualResultEntry = Button(self.mainMenuFrame,text="Manual Result Entry", relief = GROOVE, command= self.manualResult)
         self.manualResultEntry.grid(row=1,column=0,sticky="s")
         self.mainMenuOtherFrame = Frame(self.mainMenuFrame)
         self.mainMenuOtherFrame.grid(row=0,column=1,rowspan=2)
@@ -84,7 +84,97 @@ class Window(Frame):
         self.selectPlayerButton = Button(self.mainMenuOtherFrame,text="Select Player", relief = GROOVE, command = self.testtt)
         self.selectPlayerButton.grid(row=4,column=2)
 
-#listbox
+    def manualResult(self):
+        self.mainMenuFrame.destroy()
+        self.manualResultFrame = Frame(self.master)
+        self.manualResultFrame.grid()
+        self.title = Label(self.manualResultFrame, text="Manual Result Entry")
+        self.title.grid(row=0,column=0)
+        self.title.config(font=("Helvetica",11))
+        self.subTitle = Label(self.manualResultFrame, text="First, select the event.")
+        self.subTitle.grid(row=1,column=0)
+        #ljdhkshfkusgf aaaaaa
+        self.manualResultSubFrame = Frame(self.manualResultFrame)
+        self.manualResultSubFrame.grid(row=2,column=0)
+        self.eventNameEntryLabel = Label(self.manualResultSubFrame, text="Event Search:")
+        self.eventNameEntryLabel.grid(row=0,column=0)
+        self.eventNameEntry = Entry(self.manualResultSubFrame)
+        self.eventNameEntry.grid(row=0,column=1)
+        self.eventNameEntry.focus()
+        self.eventNameSubmit = Button(self.manualResultSubFrame, text="Search", command=self.updateEventSearch)
+        self.eventNameSubmit.grid(row=0,column=2)
+        #################
+        self.searchResultsLabel = Label(self.manualResultFrame,text="Event name search results:")
+        self.searchResultsLabel.grid(row=3,column=0)
+        self.searchResults = Listbox(self.manualResultFrame)
+        self.searchResults.grid(row=4,column=0)
+        self.selectSearch = Button(self.manualResultFrame, text="Select event", command=self.manualResultGame)
+        self.selectSearch.grid(row=5,column=0)
+        self.addNewEventButton = Button(self.manualResultFrame, text="Add a new event", command=self.addNewEvent)
+        self.addNewEventButton.grid(row=6,column=0)
+        self.mainMenuButton = Button(self.manualResultFrame, text="Main Menu", relief = GROOVE, command=self.manualResultToMainMenu)
+        self.mainMenuButton.grid(row=7,column=0)
+    
+    def manualResultGame(self):
+        event = self.recentEventResult[self.searchResults.curselection()[0]]
+        self.manualResultFrame.destroy()
+        self.manualResultFrame = Frame(self.master)
+        self.bestOf1RB = Radiobutton(self.manualResultFrame, text="Best of One")
+        
+        #radioButtonValueList = []
+        #    for each in player:
+        #        radioButtonValueList.append([str(each[1]+ " " +each[2]),each[0]])
+        #    print(radioButtonValueList)
+        #    self.v = StringVar()
+        #    self.v.set("L") # initialize
+        #    for text, mode in radioButtonValueList:
+        #        self.b = Radiobutton(self.playerSelector, text=text, variable=self.v, value=mode, indicatoron=0, command = self.multiNameToGraph)
+        #        self.b.pack(anchor=W)
+
+    
+    def addNewEvent(self):
+        self.manualResultFrame.destroy()
+        self.manualResultFrame =Frame(self.master)
+        self.manualResultFrame.grid()
+        self.eventNameLabel = Label(self.manualResultFrame,text="Event Name:")
+        self.eventNameEntry = Entry(self.manualResultFrame)
+        self.eventNameEntry.focus()
+        self.eventNameLabel.grid(row=0,column=0,sticky="e")
+        self.eventNameEntry.grid(row=0,column=1,sticky="w")
+        self.submit = Button(self.manualResultFrame,text="Submit", relief = GROOVE,command=self.eventDatabaseEntry)
+        self.submit.grid(row=1,column=0)
+        self.back = Button(self.manualResultFrame, text="Main Menu", relief = GROOVE,command=self.manualResultToMainMenu)
+        self.back.grid(row=1,column=1)
+
+    def eventDatabaseEntry(self):
+        if messagebox.askquestion("Are you sure","Are you sure you want to apply this change? This will alter the data stored in the database, and can only be reversed manually") == 'yes':
+            if self.eventNameEntry.get() == "":
+                messagebox.showerror("No event name","You must enter an event name")
+            else:
+                cursor.execute("SELECT * FROM Event WHERE EventName = (?)",(self.eventNameEntry.get(),))
+                if len(cursor.fetchall()) > 0:
+                    messagebox.showerror("Event exists","An event with this event name already exists")
+                else:
+                    cursor.execute("INSERT INTO Event (EventName) VALUES (?)",(self.eventNameEntry.get(),))
+                    cursor.execute("COMMIT")
+                    messagebox.showinfo("Done","The event has been added to the database")
+                    self.manualResultToMainMenu()
+        else:
+            messagebox.showinfo("No database change","There has been no database altering")
+
+    def updateEventSearch(self):
+        if self.eventNameEntry.get() == "":
+            messagebox.showerror("Nothing entered","You must have something entered when searching for events")
+        else:
+            cursor.execute("SELECT * FROM Event WHERE EventName LIKE (?)",("%"+str(self.eventNameEntry.get())+"%",))
+            self.recentEventResult = cursor.fetchall()
+            self.searchResults.delete(0,END)
+            for i in self.recentEventResult:
+                self.searchResults.insert(END,i[1])
+
+    def manualResultToMainMenu(self):
+        self.manualResultFrame.destroy()
+        self.mainMenu()
 
     def eventMVPPredictor(self):
         self.selectedTeamsList = []
@@ -171,10 +261,97 @@ class Window(Frame):
         self.title.config(font=("Helvetica",11))
         self.autoButton = Button(self.updatePlayerTeamsFrame, text="Automatic", relief = GROOVE, command=self.updatePlayerTeamsManager)
         self.autoButton.grid(row=1,column=0)
-        self.manual = Button(self.updatePlayerTeamsFrame, text="Manual", relief = GROOVE)
+        self.manual = Button(self.updatePlayerTeamsFrame, text="Manual", relief = GROOVE, command=self.playerTeamsManual)
         self.manual.grid(row=1,column=1)
         self.mainMenuButton = Button(self.updatePlayerTeamsFrame, text="Main Menu", relief = GROOVE, command=self.playerTeamsToMainMenu)
         self.mainMenuButton.grid(row=2,column=0,columnspan=2)
+    
+    def playerTeamsManual(self):
+        self.updatePlayerTeamsFrame.destroy()
+        self.updatePlayerTeamsFrame = Frame(self.master)
+        self.updatePlayerTeamsFrame.grid()
+        self.title = Label(self.updatePlayerTeamsFrame, text="Update Player's Teams")
+        self.title.grid(row=0,column=0)
+        self.title.config(font=("Helvetica",11))
+        #ljdhkshfkusgf aaaaaa
+        self.updatePlayerTeamsSubFrame = Frame(self.updatePlayerTeamsFrame)
+        self.updatePlayerTeamsSubFrame.grid(row=1,column=0)
+        self.playerNameEntryLabel = Label(self.updatePlayerTeamsSubFrame, text="Player Search:")
+        self.playerNameEntryLabel.grid(row=0,column=0)
+        self.playerNameEntry = Entry(self.updatePlayerTeamsSubFrame)
+        self.playerNameEntry.grid(row=0,column=1)
+        self.playerNameEntry.focus()
+        self.playerNameSubmit = Button(self.updatePlayerTeamsSubFrame, text="Search", command=self.updatePlayerSearch)
+        self.playerNameSubmit.grid(row=0,column=2)
+        ################
+        self.searchResultsLabel = Label(self.updatePlayerTeamsFrame,text="Player name search results:")
+        self.searchResultsLabel.grid(row=2,column=0)
+        self.searchResults = Listbox(self.updatePlayerTeamsFrame)
+        self.searchResults.grid(row=3,column=0)
+        self.selectSearch = Button(self.updatePlayerTeamsFrame, text="Select player", command= self.changePlayerTeam)
+        self.selectSearch.grid(row=4,column=0)
+        self.mainMenuButton = Button(self.updatePlayerTeamsFrame, text="Main Menu", relief = GROOVE, command=self.playerTeamsToMainMenu)
+        self.mainMenuButton.grid(row=5,column=0)
+    
+    def changePlayerTeam(self):
+        if len(self.searchResults.curselection()) > 0:
+            self.player = self.recentPlayerResult[self.searchResults.curselection()[0]]
+            self.updatePlayerTeamsFrame.destroy()
+            self.updatePlayerTeamsFrame = Frame(self.master)
+            self.updatePlayerTeamsFrame.grid()
+            self.title = Label(self.updatePlayerTeamsFrame, text="Update Player's Teams\nPlayerName = " + self.player[1])
+            self.title.grid(row=0,column=0)
+            self.title.config(font=("Helvetica",11))
+            cursor.execute("SELECT TeamName FROM Team WHERE TeamID = (?)",(self.player[3],))
+            self.subTitle = Label(self.updatePlayerTeamsFrame, text="Current team: "+str(cursor.fetchall()[0][0]))
+            self.subTitle.grid(row=1,column=0)
+            #ljdhkshfkusgf aaaaaa
+            self.updatePlayerTeamsSubFrame = Frame(self.updatePlayerTeamsFrame)
+            self.updatePlayerTeamsSubFrame.grid(row=2,column=0)
+            self.teamNameEntryLabel = Label(self.updatePlayerTeamsSubFrame, text="Team Search:")
+            self.teamNameEntryLabel.grid(row=0,column=0)
+            self.teamNameEntry = Entry(self.updatePlayerTeamsSubFrame)
+            self.teamNameEntry.grid(row=0,column=1)
+            self.teamNameEntry.focus()
+            self.teamNameSubmit = Button(self.updatePlayerTeamsSubFrame, text="Search", command=self.updateTeamSearch)
+            self.teamNameSubmit.grid(row=0,column=2)
+            #################
+            self.searchResultsLabel = Label(self.updatePlayerTeamsFrame,text="Team name search results:")
+            self.searchResultsLabel.grid(row=3,column=0)
+            self.searchResults = Listbox(self.updatePlayerTeamsFrame)
+            self.searchResults.grid(row=4,column=0)
+            self.selectSearch = Button(self.updatePlayerTeamsFrame, text="Select team", command = self.applyChange)
+            self.selectSearch.grid(row=5,column=0)
+            self.mainMenuButton = Button(self.updatePlayerTeamsFrame, text="Main Menu", relief = GROOVE, command=self.playerTeamsToMainMenu)
+            self.mainMenuButton.grid(row=6,column=0)
+        else:
+            messagebox.showerror("Nothing selected","You must have a player selected.")
+
+    def applyChange(self):
+        if len(self.searchResults.curselection()) > 0:
+            if messagebox.askquestion("Are you sure","Are you sure you want to apply this change? This will alter the data stored in the database, and can only be reversed manually") == 'yes':
+                #perform the changes
+                print(self.player)
+                print(self.recentTeamResult[self.searchResults.curselection()[0]][0])
+                cursor.execute("UPDATE Player SET TeamID = (?) WHERE PlayerID = (?)",(self.recentTeamResult[self.searchResults.curselection()[0]][0],self.player[0]))
+                cursor.execute("COMMIT")
+                messagebox.showinfo("Done","Changes were saved")
+                self.playerTeamsToMainMenu()
+            else:
+                messagebox.showinfo("No changes","You did not apply any changes")
+        else:
+            messagebox.showerror("Nothing selected","You must have a team selected.")
+ 
+    def updatePlayerSearch(self):
+        if self.playerNameEntry.get() == "":
+            messagebox.showerror("Nothing entered","You must have something entered when searching for players")
+        else:
+            cursor.execute("SELECT * FROM Player WHERE Nickname LIKE (?)",("%"+str(self.playerNameEntry.get())+"%",))
+            self.recentPlayerResult = cursor.fetchall()
+            self.searchResults.delete(0,END)
+            for i in self.recentPlayerResult:
+                self.searchResults.insert(END,i[1])
+
     
     def updatePlayerTeamsManager(self):
         UPT.update(self.date90)
@@ -455,8 +632,8 @@ class Window(Frame):
         sxy = sumXY-((sumX*sumY)/n)
         sxx = sumXSquared-(sumX**2/n)
         syy = sumYSquared-(sumY**2/n)
-        b = sxy/sxx#works fine
-        a=(sumY/n) - ((sumX/n)*b)#somethings wrong here
+        b = sxy/sxx
+        a=(sumY/n) - ((sumX/n)*b)
         self.pen3.penup()
         self.pen3.color("green")
         self.pen3.goto(-360,a+b*-360)
@@ -475,6 +652,7 @@ class Window(Frame):
         self.playerSelector.grid()
         self.playerNicknameLabel = Label(self.playerSelector,text="Player Nickname:")
         self.playerNicknameEntry = Entry(self.playerSelector)
+        self.playerNicknameEntry.focus()
         self.playerNicknameLabel.grid(row=0,column=0,sticky="e")
         self.playerNicknameEntry.grid(row=0,column=1,sticky="w")
         self.submit = Button(self.playerSelector,text="Submit", relief = GROOVE,command=self.nameCheckerToGraph)
