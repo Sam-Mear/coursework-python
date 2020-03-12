@@ -5,7 +5,11 @@ from datetime import date, timedelta, datetime
 import updatePlayerTeams as UPT
 from math import sqrt
 import time
-mydb = sqlite3.connect("CSGO-Results.db")
+import os.path
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "CSGO-Results.db")
+mydb = sqlite3.connect(db_path)
 cursor = mydb.cursor()
 
 class Window(Frame):
@@ -116,21 +120,139 @@ class Window(Frame):
         self.mainMenuButton.grid(row=7,column=0)
     
     def manualResultGame(self):
-        event = self.recentEventResult[self.searchResults.curselection()[0]]
+        if len(self.searchResults.curselection()) == 0:
+            messagebox.showerror("No event selected","An event must be selected to enter a result")
+        else:
+            self.eventInfo = self.recentEventResult[self.searchResults.curselection()[0]]
+            self.manualResultFrame.destroy()
+            self.manualResultFrame = Frame(self.master)
+            self.manualResultFrame.grid()
+            self.title = Label(self.manualResultFrame, text="Manual Result Entry\nMatch Information")
+            self.title.grid(row=0,column=0)
+            self.title.config(font=("Helvetica",11))
+            self.numberOfMapsLabel = Label(self.manualResultFrame, text="Number of maps:")
+            self.numberOfMapsLabel.grid(row=0,column=1)
+            self.format = StringVar()
+            Radiobutton(self.manualResultFrame, text="Best of One", variable = self.format, value="Best of 1", command=self.enableNumberOfMaps).grid(row=1,column=0)
+            Radiobutton(self.manualResultFrame, text="Best of Two", variable = self.format, value="Best of 2", command=self.enableNumberOfMaps).grid(row=2,column=0)
+            Radiobutton(self.manualResultFrame, text="Best of Three", variable = self.format, value="Best of 3", command=self.enableNumberOfMaps).grid(row=3,column=0)
+            Radiobutton(self.manualResultFrame, text="Best of Five", variable = self.format, value="Best of 5", command=self.enableNumberOfMaps).grid(row=4,column=0)
+            self.format.set("Best of 1")
+            self.radioButtonFrame = Frame(self.manualResultFrame)
+            self.radioButtonFrame.grid(row=1,column=1,rowspan=4)
+            self.numberOfMaps = StringVar()
+            Radiobutton(self.radioButtonFrame, text="One", variable = self.numberOfMaps, value="1").grid()
+            self.numberOfMaps.set("1")
+            self.manualResultSubFrame = Frame(self.manualResultFrame)
+            self.manualResultSubFrame.grid(row=5,column=0,columnspan=2)
+            self.dateLabel = Label(self.manualResultSubFrame,text="Input date of match\nyyyy-mm-dd")
+            self.dateLabel.grid(row=0,column=0,columnspan=2)
+            self.yearLabel = Label(self.manualResultSubFrame,text="Year")
+            self.yearLabel.grid(row=1,column=0,sticky="e")
+            self.monthLabel = Label(self.manualResultSubFrame, text="Month")
+            self.monthLabel.grid(row=1,column=1)
+            self.dayLabel = Label(self.manualResultSubFrame, text="Day")
+            self.dayLabel.grid(row=1,column=2,sticky="w")
+            vcmd = (self.register(self.onValidate),'%S')
+            self.year = Entry(self.manualResultSubFrame, validate="key",validatecommand=vcmd,width=4)
+            self.year.grid(row=2,column=0,sticky="e")
+            self.month = Entry(self.manualResultSubFrame, validate="key",validatecommand=vcmd,width=2)
+            self.month.grid(row=2,column=1)
+            self.day = Entry(self.manualResultSubFrame, validate="key",validatecommand=vcmd,width=2)
+            self.day.grid(row=2,column=2,sticky="w")
+            self.submit = Button(self.manualResultFrame, text="Submit",command=self.gameDatabaseEntry)
+            self.submit.grid(row=6,column=0,columnspan=2)
+
+    def gameDatabaseEntry(self):
+        if len(self.year.get()) == 4:
+            if len(self.month.get()) ==2:
+                if len(self.month.get())==2:
+                    if messagebox.askquestion("Are you sure","Are you sure you want to apply this change? This will alter the data stored in the database, and can only be reversed manually") == 'yes':
+                        cursor.execute("INSERT INTO Game (Format,NumberOfMaps,Date,EventID) VALUES (?,?,?,?)",(self.format.get(), self.numberOfMaps.get(), "{0}-{1}-{2}".format(self.year.get(),self.month.get(),self.day.get()), self.eventInfo[0]))
+                        cursor.execute("COMMIT")
+                        messagebox.showinfo("Done","The match has been added to the database, moving onto the maps")
+                        self.mapDatabaseUIIndex = 0
+                        self.numberOfMaps = self.numberOfMaps.get()
+                        self.gameID = cursor.lastrowid
+                        self.mapDatabaseUI()
+                    else:
+                        messagebox.showinfo("No database change","There has been no database altering")
+                else:
+                    print("cunt3")
+            else:
+                print("cunt2")
+        else:
+            print("cunt1")
+    
+    def mapDatabaseUI(self):
+        self.mapDatabaseUIIndex += 1
+        vcmd = (self.register(self.onValidate),'%S')
+            #entry
         self.manualResultFrame.destroy()
         self.manualResultFrame = Frame(self.master)
-        self.bestOf1RB = Radiobutton(self.manualResultFrame, text="Best of One")
-        
-        #radioButtonValueList = []
-        #    for each in player:
-        #        radioButtonValueList.append([str(each[1]+ " " +each[2]),each[0]])
-        #    print(radioButtonValueList)
-        #    self.v = StringVar()
-        #    self.v.set("L") # initialize
-        #    for text, mode in radioButtonValueList:
-        #        self.b = Radiobutton(self.playerSelector, text=text, variable=self.v, value=mode, indicatoron=0, command = self.multiNameToGraph)
-        #        self.b.pack(anchor=W)
-
+        self.manualResultFrame.grid()
+        self.mapNameLabel = Label(self.manualResultFrame, text="Map Name:")
+        self.mapNameLabel.grid(row=0,column=0, sticky="e")
+        self.roundsPlayedLabel = Label(self.manualResultFrame, text="Rounds Played:")
+        self.roundsPlayedLabel.grid(row=1,column=0,sticky="e")
+        self.mapNameEntry = Entry(self.manualResultFrame)
+        self.mapNameEntry.grid(row=0,column=1,sticky="w")
+        self.mapNameEntry.focus()
+        self.roundsPlayedEntry = Entry(self.manualResultFrame,validate="key",validatecommand=vcmd)
+        self.roundsPlayedEntry.grid(row=1,column=1,sticky="w")
+        self.submit = Button(self.manualResultFrame, text="Submit",command=self.mapDatabaseEntry)
+        self.submit.grid(row=2,column=0,columnspan=2)
+    
+    def mapDatabaseEntry(self):
+        if len(self.mapNameEntry.get()) > 0:
+            if len(self.roundsPlayedEntry.get()) > 0:
+                cursor.execute("INSERT INTO GameMap (RoundsPlayed,MapName,GameID) VALUES (?,?,?)",(self.roundsPlayedEntry.get(),self.mapNameEntry.get(),self.gameID))
+                #cursor.execute("COMMIT")FINDME
+                if str(self.mapDatabaseUIIndex) == str(self.numberOfMaps):#if all maps has been entered:
+                    messagebox.showinfo("Complete","All maps have now been entered into the database.")
+                else:
+                    messagebox.showinfo("Complete","That map has been entered into the database, onto the next.")
+                    self.teamMapDatabaseUI()
+                    self.mapDatabaseUI()
+            else:
+                messagebox.showerror("Rounds Played Empty","The rounds played entry must not be empty.")
+        else:
+            messagebox.showerror("Map Name Empty","The map name entry must not be empty.")
+    
+    def teamMapDatabaseUI(self):
+        pass
+    
+    def onValidate(self,S):
+        # Disallow anything but numbers
+        if S.isdigit() == True:
+            return True
+        else:
+            self.bell()
+            return False
+    
+    def enableNumberOfMaps(self):
+        self.radioButtonFrame.destroy()
+        self.radioButtonFrame = Frame(self.manualResultFrame)
+        self.radioButtonFrame.grid(row=1,column=1,rowspan=4)
+        if self.format.get() == "Best of 1":
+            self.numberOfMaps = StringVar()
+            Radiobutton(self.radioButtonFrame, text="One", variable = self.numberOfMaps, value="1").grid()
+            self.numberOfMaps.set("1")
+        elif self.format.get() == "Best of 3":
+            self.numberOfMaps = StringVar()
+            Radiobutton(self.radioButtonFrame, text="Two", variable = self.numberOfMaps, value="2").grid()
+            Radiobutton(self.radioButtonFrame, text="Three", variable = self.numberOfMaps, value="3").grid()
+            self.numberOfMaps.set("3")
+        elif self.format.get() == "Best of 5":
+            self.numberOfMaps = StringVar()
+            Radiobutton(self.radioButtonFrame, text="Three", variable = self.numberOfMaps, value="3").grid()
+            Radiobutton(self.radioButtonFrame, text="Four", variable = self.numberOfMaps, value="4").grid()
+            Radiobutton(self.radioButtonFrame, text="Five", variable = self.numberOfMaps, value="5").grid()
+            self.numberOfMaps.set("5")
+        else:
+            self.numberOfMaps = StringVar()
+            Radiobutton(self.radioButtonFrame, text="Two", variable = self.numberOfMaps, value="2").grid()
+            self.numberOfMaps.set("2")
     
     def addNewEvent(self):
         self.manualResultFrame.destroy()
@@ -214,8 +336,16 @@ class Window(Frame):
     
     def predict(self):
         if len(self.selectedTeamsList)>1:
+            self.playerList = []
             for each in self.selectedTeamsList:
-                pass
+                cursor.execute("SELECT PlayerID FROM Player WHERE TeamID = (?)",(each[0],))
+                self.playerList.append(cursor.fetchall())
+            print(self.playerList)
+            #get coords if it were to be on a graph
+            #linear regression to find out what rating would be in 10 days
+            #
+            #predict b is my players on the rise thing, but it finds the difference between the different
+            #bits and predicts next 10 days from that.
         else:
             messagebox.showerror("No Teams","Cannot predict if there are no teams selected, or if there is only one team selected")
 
@@ -352,7 +482,6 @@ class Window(Frame):
             for i in self.recentPlayerResult:
                 self.searchResults.insert(END,i[1])
 
-    
     def updatePlayerTeamsManager(self):
         UPT.update(self.date90)
         messagebox.showinfo("Done","The team ID for each player has been automatically updated.")
@@ -464,7 +593,7 @@ class Window(Frame):
             self.backToMainMenu = Button(self.eventSelectionFrame, text="Main Menu", relief = GROOVE,command=self.eventMVPPickerToMenu)
             self.backToMainMenu.grid(row=3,column=0,columnspan=2)
         else:
-            print("YOU DIDNT SELECT ANYTHING CUNT")
+            messagebox.showerror("No selection","No event was selected!")
 
     def eventMVPPickerToMenu(self):
         self.eventSelectionFrame.destroy()
@@ -499,7 +628,6 @@ class Window(Frame):
             self.graph(playerID)
         else:
             print("YOU HAVENT SELECTED ANYHTING BITHC.")
-        
 
     def graph(self,playerID):
         print(playerID)
