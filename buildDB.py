@@ -1,6 +1,9 @@
 import sqlite3
+import os.path
 
-mydb = sqlite3.connect("CSGO-Results1.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "CSGO-Results.db")
+mydb = sqlite3.connect(db_path)
 
 #creating an instance of 'cursor' class which is used to execute the 'SQL' statements in 'Python'
 cursor = mydb.cursor()
@@ -22,7 +25,7 @@ def database(db,cursor):
     print(cursor)
     cursor.execute("CREATE TABLE TeamMap (GameMapID INTEGER NOT NULL,TeamID INTEGER NOT NULL,Won INTEGER NOT NULL,RoundsWon INTEGER NOT NULL,RoundsLost INTEGER NOT NULL,FOREIGN KEY(GameMapID) REFERENCES GameMap(GameMapID),FOREIGN KEY (TeamID) REFERENCES Team(TeamID),PRIMARY KEY (GameMapID, TeamID))")
     print(cursor)
-    print("Created tables.... Onto basic data entry....")
+    print("Created tables. Onto basic data entry....")
     cursor.execute("INSERT INTO Team VALUES(0,'No Team')")
     print(cursor)
     print("Checking tbl Team..")
