@@ -23,9 +23,10 @@ class Window(Frame):
 
         self.master.title("CS Stats")
         self.master.iconbitmap(os.path.join(os.path.dirname(os.path.abspath(__file__)), "CSStats.ico"))
-        self.date90 = date.today() - timedelta(90)
-        self.date60 = date.today() - timedelta(60)
-        self.date30 = date.today() - timedelta(30)
+        self.todaysDate = date(2020, 3, 17)
+        self.date90 = self.todaysDate - timedelta(90)
+        self.date60 = self.todaysDate - timedelta(60)
+        self.date30 = self.todaysDate - timedelta(30)
         self.grid(row=0,column=0)
         
     def mainMenu(self):
@@ -433,7 +434,7 @@ class Window(Frame):
             self.playerList = []
             linRegPredictionList = []
             for each in self.selectedTeamsList:#For each selected team
-                cursor.execute("SELECT NSPlayerID, Player.Nickname, round(((((STRating - TNRating)+ratingDifferenceNSST)/2)*-1),2) FROM( SELECT NSPlayerID, (NSRating - STRating) ratingDifferenceNSST, NSRating, STRating FROM ( SELECT PlayerMap.PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, Player, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID), ( SELECT PlayerMap.PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, Player, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID ) WHERE NSPlayerID = STPlayerID ), ( SELECT PlayerMap.PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Player, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID ), Player WHERE NSPlayerID = TNPlayerID AND NSPlayerID = Player.PlayerID",(each[0],self.date90,self.date60,each[0],self.date60,self.date30,each[0],self.date30,date.today()))
+                cursor.execute("SELECT NSPlayerID, Player.Nickname, round(((((STRating - TNRating)+ratingDifferenceNSST)/2)*-1),2) FROM( SELECT NSPlayerID, (NSRating - STRating) ratingDifferenceNSST, NSRating, STRating FROM ( SELECT PlayerMap.PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, Player, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID), ( SELECT PlayerMap.PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, Player, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID ) WHERE NSPlayerID = STPlayerID ), ( SELECT PlayerMap.PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Player, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Player.PlayerID = PlayerMap.PlayerID AND Player.TeamID IN(?) AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerMap.PlayerID ), Player WHERE NSPlayerID = TNPlayerID AND NSPlayerID = Player.PlayerID",(each[0],self.date90,self.date60,each[0],self.date60,self.date30,each[0],self.date30,self.todaysDate))
                 for Each in cursor.fetchall():#For each player
                     if len(Each) > 0:#If not empty -  can happen when player doesnt play for a month.
                         cursor.execute("SELECT PlayerID, avg(Rating) FROM PlayerMap, GameMap,Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND Game.GameID = GameMap.GameID AND Date > (?) AND PlayerID = (?)",(self.date90, Each[0]))
@@ -674,10 +675,10 @@ class Window(Frame):
         self.playersFrame = Frame(self.master)
         self.playersFrame.grid()
         if riseOrDecline == "R":
-            cursor.execute("SELECT NSPlayerID,  Player.Nickname, (STRating - TNRating) ratingDifference FROM (SELECT NSPlayerID, (NSRating - STRating), NSRating, STRating FROM (SELECT PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),(SELECT PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID) WHERE NSPlayerID = STPlayerID AND (NSRating - STRating) < -0.15),(SELECT PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),Player WHERE NSPlayerID = TNPlayerID AND ratingDifference < -0.15 AND NSPlayerID = Player.PlayerID ORDER BY ratingDifference ASC LIMIT 10",(self.date90,self.date60,self.date60,self.date30,self.date30,date.today()))
+            cursor.execute("SELECT NSPlayerID,  Player.Nickname, (STRating - TNRating) ratingDifference FROM (SELECT NSPlayerID, (NSRating - STRating), NSRating, STRating FROM (SELECT PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),(SELECT PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID) WHERE NSPlayerID = STPlayerID AND (NSRating - STRating) < -0.15),(SELECT PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),Player WHERE NSPlayerID = TNPlayerID AND ratingDifference < -0.15 AND NSPlayerID = Player.PlayerID ORDER BY ratingDifference ASC LIMIT 10",(self.date90,self.date60,self.date60,self.date30,self.date30,self.todaysDate))
             self.title = Label(self.playersFrame, text="Players on the Rise")
         else:
-            cursor.execute("SELECT NSPlayerID,  Player.Nickname, (STRating - TNRating) ratingDifference FROM (SELECT NSPlayerID, (NSRating - STRating), NSRating, STRating FROM (SELECT PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),(SELECT PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID) WHERE NSPlayerID = STPlayerID AND (NSRating - STRating) > 0.15),(SELECT PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),Player WHERE NSPlayerID = TNPlayerID AND ratingDifference > 0.15 AND NSPlayerID = Player.PlayerID ORDER BY ratingDifference DESC LIMIT 10",(self.date90,self.date60,self.date60,self.date30,self.date30,date.today()))
+            cursor.execute("SELECT NSPlayerID,  Player.Nickname, (STRating - TNRating) ratingDifference FROM (SELECT NSPlayerID, (NSRating - STRating), NSRating, STRating FROM (SELECT PlayerID NSPlayerID, avg(Rating) NSRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),(SELECT PlayerID STPlayerID, avg(Rating) STRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID) WHERE NSPlayerID = STPlayerID AND (NSRating - STRating) > 0.15),(SELECT PlayerID TNPlayerID, avg(Rating) TNRating FROM PlayerMap, GameMap, Game WHERE PlayerMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) AND Game.Date <= (?) GROUP BY PlayerID),Player WHERE NSPlayerID = TNPlayerID AND ratingDifference > 0.15 AND NSPlayerID = Player.PlayerID ORDER BY ratingDifference DESC LIMIT 10",(self.date90,self.date60,self.date60,self.date30,self.date30,self.todaysDate))
             self.title = Label(self.playersFrame, text="Players on the Decline")
         self.playerQry = cursor.fetchall()
         self.title.grid(row=0,column=0)
@@ -726,9 +727,11 @@ class Window(Frame):
 
         self.backButton = Button(self.teamsFrame,text="Back to Main Menu", relief = GROOVE, command=self.teamsToMainMenu)
         self.backButton.grid(row=0,column=1,sticky="e")
+        un = 0
         for i in range(len(self.teamsWLResult)):
             splittedString = str(self.teamsWLResult[i]).split(",")
-            self.mapsTreeview.insert("", END, "", text=splittedString[0].split("'")[1], values=(splittedString[1],splittedString[2].split(")")[0]))
+            self.mapsTreeview.insert("", END, un, text=splittedString[0].split("'")[1], values=(splittedString[1],splittedString[2].split(")")[0]))
+            un = un+1
 
     def teamsToMainMenu(self):
         self.teamsFrame.destroy()
@@ -738,7 +741,7 @@ class Window(Frame):
         self.mainMenuFrame.destroy()#Destroys old frame
         self.eventMVPPickerFrame = Frame(self.master)#to make way for the new frame
         self.eventMVPPickerFrame.grid()
-        cursor.execute("SELECT EventName, Event.EventID FROM Event, Game WHERE Date > (?) AND  Game.EventID = Event.EventID GROUP BY EventName",(date.today() - timedelta(20),))
+        cursor.execute("SELECT EventName, Event.EventID FROM Event, Game WHERE Date > (?) AND  Game.EventID = Event.EventID GROUP BY EventName",(self.todaysDate - timedelta(20),))
         self.eventNamesQRY = cursor.fetchall()#all results from above query
         self.eventNames = Listbox(self.eventMVPPickerFrame,height = (len(self.eventNamesQRY)+1),width = 70)#the hight of this listbox is dependant on how many results we get from the above query
         self.eventNames.grid(row=0,column=0)
@@ -774,12 +777,14 @@ class Window(Frame):
             self.top5Treeview.heading("Rating",text="Rating")
 
             self.temp = []
+            un = 0
             for i in range(len(self.top5)):
                 cursor.execute("SELECT Nickname, TeamName FROM Player,Team WHERE PlayerID = (?) AND Player.TeamID = Team.TeamID",(self.top5[i][1],))
                 self.temp.append(cursor.fetchall())
                 self.temp[i].append(self.top5[i][0])
                 splittedString = str(self.temp[i]).split(",")
-                self.top5Treeview.insert("", END, "", text=splittedString[0].split("'")[1], values=(splittedString[1].split("'")[1],splittedString[2].split("]")[0]))
+                self.top5Treeview.insert("", END, un, text=splittedString[0].split("'")[1], values=(splittedString[1].split("'")[1],splittedString[2].split("]")[0]))
+                un=un+1
             self.eventStartLabel = Label(self.eventMVPSelectionFrame, text="Event Start Date:")
             self.eventStartLabel.grid(row=1,column=0,sticky=E)
             self.eventEndLabel = Label(self.eventMVPSelectionFrame, text="Event End Date:")
@@ -959,9 +964,11 @@ class Window(Frame):
         self.recentResultsTree.heading("Rounds Lost",text="Rounds Lost")
         self.recentResultsTree.heading("Rating",text="Rating")
         cursor.execute("SELECT Team.TeamName, subqryRoundsWon, subqryRoundsLost, qryRating FROM (SELECT Nickname, TeamMap.TeamID TeamIDqry, Game.Date qryDate, TeamMap.RoundsWon subqryroundsLost, TeamMap.RoundsLost subqryroundsWon, PlayerMap.Rating qryRating FROM Player, PlayerMap, TeamMap, GameMap, Game WHERE Player.PlayerID = (?) AND Player.PlayerID = PlayerMap.PlayerID AND PlayerMap.GameMapID = TeamMap.GameMapID AND Player.TeamID != TeamMap.TeamID AND TeamMap.GameMapID = GameMap.GameMapID AND GameMap.GameID = Game.GameID AND Game.Date > (?) ),Team WHERE Team.TeamID = TeamIDqry ORDER BY qryDate DESC LIMIT 10;",(playerID, self.date90))
+        un = 0
         for each in cursor.fetchall():
             splittedString = str(each).split(",")
-            self.recentResultsTree.insert("", END, "", text=splittedString[0].split("'")[1], values=(splittedString[1],splittedString[2],splittedString[3].split(")")[0]))
+            self.recentResultsTree.insert("", END, un, text=splittedString[0].split("'")[1], values=(splittedString[1],splittedString[2],splittedString[3].split(")")[0]))
+            un = un+ 1
         #linear regression
         self.linRegBut = Button(self.buttons, text="Perform linear regression", relief = GROOVE, command= self.linRegSubrt)
         self.linRegBut.grid(row=6,column=0,columnspan=2)
@@ -1074,7 +1081,8 @@ def ui():
     root.mainloop()#Now awaits events to handle
 
 def scraper():
-    import SCRAPE
+    print("The scraper has been commented out.")
+    #import SCRAPE
 
 if __name__ == '__main__':
     scraperThread = Thread(target = scraper)# defining it as a variable so i can
